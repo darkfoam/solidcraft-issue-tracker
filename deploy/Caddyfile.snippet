@@ -1,0 +1,16 @@
+solidcraft.neilclack.com {
+	import security_headers
+
+	@mcp path /mcp /mcp/*
+	handle @mcp {
+		# Streamable HTTP MCP; do not buffer the response stream.
+		reverse_proxy 127.0.0.1:3101 {
+			flush_interval -1
+		}
+	}
+
+	handle {
+		encode zstd gzip
+		reverse_proxy 127.0.0.1:3100
+	}
+}

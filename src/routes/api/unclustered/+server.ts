@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { getUnclustered } from '../../../lib/server/work';
+import { getUnclustered } from '../../../lib/server/read';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = ({ url }) => {

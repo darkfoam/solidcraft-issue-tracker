@@ -493,51 +493,6 @@ function readPersistedClusters(
 	}
 }
 
-function seedClusters(clusters: ClusterRecord[], areaBySlug: Map<string, TagRow>): void {
-	const db = new DatabaseSync(DB_PATH);
-	try {
-		db.exec('PRAGMA busy_timeout=10000');
-		db.exec('BEGIN IMMEDIATE');
-		const insertCluster = db.prepare(
-			`insert into clusters(name, rationale, root_tag_id, score, created_at, updated_at)
-			 values(?, ?, ?, ?, datetime('now'), datetime('now'))`
-		);
-		const insertMember = db.prepare(
-			`insert or ignore into cluster_issues(cluster_id, issue_id, role) values(?, ?, 'member')`
-		);
-		const insertQueue = db.prepare(
-			`insert or ignore into cluster_queue(cluster_id, status, updated_at)
-			 values(?, 'new', datetime('now'))`
-		);
-		for (const cluster of clusters) {
-			const topicSlug =
-				cluster.area.leafSlug === 'general'
-					? cluster.area.rootSlug
-					: `${cluster.area.rootSlug}/${cluster.area.leafSlug}`;
-			const tagId = areaBySlug.get(topicSlug)?.id ?? null;
-			const rationale = JSON.stringify({
-				area: cluster.area,
-				signature: cluster.signature,
-				source: 'heuristic'
-			});
-			const result = insertCluster.run(cluster.label, rationale, tagId, cluster.issues.length);
-			const id = Number(result.lastInsertRowid);
-			for (const issue of cluster.issues) insertMember.run(id, issue.id);
-			insertQueue.run(id);
-		}
-		db.exec('COMMIT');
-	} catch (error) {
-		try {
-			db.exec('ROLLBACK');
-		} catch {
-			// ignore rollback errors
-		}
-		throw error;
-	} finally {
-		db.close();
-	}
-}
-
 function addUnclusteredClusters(
 	clusters: ClusterRecord[],
 	issues: IssueRow[],
@@ -769,10 +724,6 @@ function buildGraph(): GraphData {
 	let clusters: ClusterRecord[] = [];
 	try {
 		clusters = readPersistedClusters(issueById, areaByIssue, repoById);
-		if (clusters.length === 0 && computedClusters.length > 0) {
-			seedClusters(computedClusters, areaBySlug);
-			clusters = readPersistedClusters(issueById, areaByIssue, repoById);
-		}
 	} catch (error) {
 		// A read-only or locked database should still render. The computed
 		// clusters are a valid fallback; persistent grouping needs a writable DB.

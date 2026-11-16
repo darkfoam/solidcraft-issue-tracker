@@ -10,26 +10,64 @@
 		fit: () => void;
 	}
 
-	interface SyncStatus {
-		running: boolean;
-		startedAt: string;
-		finishedAt: string;
-		lastError: string;
-		lastRun: {
-			id: number;
-			startedAt: string;
-			finishedAt: string;
-			status: string;
-			mode: string;
-			error: string;
-		} | null;
-		repositories: Array<{ slug: string; lastSync: string; error: string }>;
+	interface Assignee {
+		login: string;
+		avatarUrl: string;
+		htmlUrl: string;
+	}
+
+	interface PullRequestSummary {
+		number: number;
+		title: string;
+		state: string;
+		mergedAt: string;
+		author: string;
+		url: string;
+		relation: string;
+		status: string;
+	}
+
+	interface IssueDetail {
+		repo: string;
+		number: number;
+		title: string;
+		state: string;
+		url: string;
+		assignees: Assignee[];
+		labels: string[];
+		pullRequests: PullRequestSummary[];
+		lastSyncedAt: string;
+		createdAt: string;
+		updatedAt: string;
+	}
+
+	interface ClusterDetail {
+		id: number;
+		name: string;
+		area: string;
+		topic: string;
+		issueCount: number;
+		openCount: number;
+		issues: Array<{
+			repo: string;
+			number: number;
+			title: string;
+			state: string;
+			url: string;
+			assignees: Assignee[];
+		}>;
+		pullRequests: PullRequestSummary[];
+		lastSyncedAt: string;
 	}
 
 	let graphData = $state<GraphData | null>(null);
 	let loading = $state(true);
 	let error = $state('');
 	let selected = $state<GraphNode | null>(null);
+	let detail = $state<IssueDetail | ClusterDetail | null>(null);
+	let detailLoading = $state(false);
+	let detailRequest = 0;
+	let lastSyncedAt = $state<string | null>(null);
 	let query = $state('');
 	let repoFilter = $state('all');
 	let stateFilter = $state<'all' | IssueState>('all');
@@ -39,9 +77,6 @@
 	let showSingletons = $state(false);
 	let showReferences = $state(false);
 	let graphView = $state<GraphViewHandle>();
-	let syncStatus = $state<SyncStatus | null>(null);
-	let syncBusy = $state(false);
-	let syncMessage = $state('');
 
 	const nodeById = $derived.by(() => {
 		const map = new SvelteMap<string, GraphNode>();
@@ -112,6 +147,9 @@
 			.slice(0, 100);
 	});
 
+	const issueDetail = $derived.by(() => (detail && 'repo' in detail ? detail : null));
+	const clusterDetail = $derived.by(() => (detail && 'issues' in detail ? detail : null));
+
 	const selectedPath = $derived.by(() => {
 		if (!selected) return [];
 		const path: GraphNode[] = [];
@@ -161,58 +199,68 @@
 		}
 	}
 
-	async function loadSyncStatus(): Promise<void> {
+	async function loadStatus(): Promise<void> {
 		try {
-			const response = await fetch('/api/sync');
-			if (response.ok) syncStatus = (await response.json()) as SyncStatus;
+			const response = await fetch('/api/status');
+			if (response.ok) {
+				const status = (await response.json()) as { lastSyncedAt?: string };
+				lastSyncedAt = status.lastSyncedAt || null;
+			}
 		} catch {
-			// Status is optional; the graph remains usable.
+			// The graph remains usable if the status endpoint is unavailable.
 		}
 	}
 
-	async function syncNow(): Promise<void> {
-		if (syncBusy || syncStatus?.running) return;
-		syncBusy = true;
-		syncMessage = 'Starting sync…';
+	const lastSyncLabel = $derived.by(() => {
+		if (!lastSyncedAt) return 'Not synced yet';
 		try {
-			const response = await fetch('/api/sync', {
-				method: 'POST',
-				headers: { 'content-type': 'application/json' },
-				body: JSON.stringify({})
-			});
-			if (!response.ok) throw new Error(`Sync API returned ${response.status}`);
-			await loadSyncStatus();
-			// Poll until the child process finishes, then force one graph rebuild.
-			for (let attempt = 0; attempt < 120; attempt++) {
-				await new Promise((resolvePromise) => setTimeout(resolvePromise, 3000));
-				await loadSyncStatus();
-				if (!syncStatus?.running) break;
-			}
-			if (syncStatus?.lastRun?.status === 'failed' || syncStatus?.lastError) {
-				syncMessage = syncStatus.lastError || syncStatus.lastRun?.error || 'Sync failed';
-			} else {
-				await loadGraph(true);
-				syncMessage = 'Sync complete';
-			}
-		} catch (problem) {
-			syncMessage = problem instanceof Error ? problem.message : 'Sync failed';
+			return new Intl.DateTimeFormat(undefined, {
+				dateStyle: 'medium',
+				timeStyle: 'short'
+			}).format(new Date(lastSyncedAt));
+		} catch {
+			return lastSyncedAt;
+		}
+	});
+	async function loadDetail(node: GraphNode): Promise<void> {
+		const request = ++detailRequest;
+		detail = null;
+		if (node.kind !== 'issue' && node.kind !== 'cluster') return;
+		const url =
+			node.kind === 'issue' && node.repo && node.number
+				? `/api/issues?repo=${encodeURIComponent(node.repo)}&number=${node.number}`
+				: node.kind === 'cluster' && node.dbId
+					? `/api/clusters/${node.dbId}`
+					: '';
+		if (!url) return;
+		detailLoading = true;
+		try {
+			const response = await fetch(url);
+			if (!response.ok) throw new Error(`Detail API returned ${response.status}`);
+			if (request === detailRequest) detail = await response.json();
+		} catch {
+			if (request === detailRequest) detail = null;
 		} finally {
-			syncBusy = false;
+			if (request === detailRequest) detailLoading = false;
 		}
 	}
 
 	onMount(() => {
 		void loadGraph();
-		void loadSyncStatus();
-		const timer = setInterval(() => {
-			if (!syncStatus?.running) void loadSyncStatus();
-		}, 30_000);
+		void loadStatus();
+		const timer = setInterval(() => void loadStatus(), 300_000);
 		return () => clearInterval(timer);
 	});
 
 	function selectNode(node: GraphNode | null, focus = false): void {
 		selected = node;
-		if (node && focus) graphView?.focusNode(node.id);
+		detail = null;
+		if (node) {
+			void loadDetail(node);
+			if (focus) graphView?.focusNode(node.id);
+		} else {
+			detailRequest++;
+		}
 	}
 
 	function selectSearchResult(node: GraphNode): void {
@@ -298,15 +346,12 @@
 		</div>
 
 		<div class="top-actions">
-			<button
-				class="ghost-button"
-				onclick={syncNow}
-				disabled={syncBusy || syncStatus?.running}
-				title={syncStatus?.lastError || 'Fetch updated GitHub issues and retag'}
-			>
-				{syncBusy || syncStatus?.running ? 'Syncing…' : 'Sync now'}
-			</button>
+			<span class="last-sync" title={lastSyncedAt ?? 'No successful sync yet'}>
+				Last synced
+				<strong>{lastSyncLabel}</strong>
+			</span>
 			<button class="ghost-button" onclick={() => graphView?.fit()}>Fit graph</button>
+			<a class="ghost-button" href={resolve('/developers')}>API &amp; MCP</a>
 			<a class="ghost-button" href={resolve('/api/graph')} target="_blank" rel="noreferrer"
 				>JSON API</a
 			>
@@ -406,23 +451,6 @@
 				<button class="text-button" onclick={resetFilters}>Reset filters</button>
 			{/if}
 
-			<div class="sync-note">
-				<h3>Database sync</h3>
-				{#if syncStatus?.lastRun}
-					<p>
-						Last run: <strong>{syncStatus.lastRun.status}</strong>
-						{#if syncStatus.lastRun.finishedAt}
-							· {syncStatus.lastRun.finishedAt.slice(0, 16).replace('T', ' ')}
-						{/if}
-					</p>
-				{:else}
-					<p>No sync recorded yet.</p>
-				{/if}
-				{#if syncMessage}<p class="sync-message">{syncMessage}</p>{/if}
-				{#if syncStatus?.lastError}<p class="sync-error">{syncStatus.lastError}</p>{/if}
-				<p class="sync-hint">Agents can also use <code>npm run sync</code> or the queue API.</p>
-			</div>
-
 			<div class="legend">
 				<h3>Legend</h3>
 				<div class="legend-row"><span class="legend-dot area"></span> Topic</div>
@@ -470,7 +498,7 @@
 					<p>{error}</p>
 					<pre>TRIAGE_DB_PATH=/path/to/triage.sqlite npm run dev</pre>
 					<p class="muted">
-						The default path is <code>~/solidcraft-triage/analysis/triage.sqlite</code>.
+						Set <code>TRIAGE_DB_PATH</code> to the database location.
 					</p>
 				</div>
 			{/if}
@@ -494,20 +522,6 @@
 						{/if}
 					</div>
 				</div>
-
-				{#if selected.kind === 'cluster'}
-					<div class="queue-meta">
-						<span class="queue-pill"
-							>{selected.pending ? 'needs grouping' : selected.queueStatus}</span
-						>
-						{#if selected.assignee}
-							<span>assigned to {selected.assignee}</span>
-						{/if}
-						{#if selected.priority && selected.priority !== 'none'}<span>{selected.priority}</span
-							>{/if}
-						{#if selected.layer && selected.layer !== 'unknown'}<span>{selected.layer}</span>{/if}
-					</div>
-				{/if}
 
 				<div class="metric-grid">
 					{#if selected.kind !== 'issue'}
@@ -544,18 +558,18 @@
 								{selected.state}
 							</span>
 						</div>
-						{#if selected.labels?.length}
+						{#if issueDetail?.labels?.length || selected.labels?.length}
 							<div class="labels">
-								{#each selected.labels as label (label)}
+								{#each issueDetail?.labels ?? selected.labels ?? [] as label (label)}
 									<span>{label}</span>
 								{/each}
 							</div>
 						{/if}
 						<dl>
 							<dt>Created</dt>
-							<dd>{selected.createdAt?.slice(0, 10) ?? '—'}</dd>
+							<dd>{(issueDetail?.createdAt ?? selected.createdAt)?.slice(0, 10) ?? '—'}</dd>
 							<dt>Updated</dt>
-							<dd>{selected.updatedAt?.slice(0, 10) ?? '—'}</dd>
+							<dd>{(issueDetail?.updatedAt ?? selected.updatedAt)?.slice(0, 10) ?? '—'}</dd>
 							<dt>Cluster</dt>
 							<dd>
 								<button
@@ -567,8 +581,100 @@
 								>
 							</dd>
 						</dl>
+						{#if detailLoading}
+							<p class="empty-note">Loading GitHub work status…</p>
+						{:else if issueDetail}
+							<div class="work-status">
+								<h3>Work status</h3>
+								{#if issueDetail.assignees.length}
+									<p class="assignment">
+										Assigned on GitHub:
+										{#each issueDetail.assignees as assignee (assignee.login)}
+											<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+											<a href={assignee.htmlUrl} target="_blank" rel="noreferrer"
+												>@{assignee.login}</a
+											>
+										{/each}
+									</p>
+								{:else}
+									<p class="empty-note">Not assigned on GitHub.</p>
+								{/if}
+								<h4>Linked pull requests</h4>
+								{#if issueDetail.pullRequests.length}
+									<div class="pr-list">
+										{#each issueDetail.pullRequests as pr (pr.number)}
+											<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+											<a class="pr-row" href={pr.url} target="_blank" rel="noreferrer">
+												<span class="pr-title">#{pr.number} {short(pr.title, 72)}</span>
+												<span
+													class:pr-ready={pr.status === 'Ready by visible checks'}
+													class:pr-waiting={pr.status.includes('waiting') ||
+														pr.status.includes('review')}
+													class="pr-status">{pr.status}</span
+												>
+												<span class="pr-meta"
+													>{pr.author ? `by @${pr.author}` : ''} · {pr.relation}</span
+												>
+											</a>
+										{/each}
+									</div>
+								{:else}
+									<p class="empty-note">No linked pull requests found in the synced data.</p>
+								{/if}
+							</div>
+						{/if}
 					</div>
 				{:else}
+					{#if detailLoading}
+						<p class="empty-note">Loading GitHub work status…</p>
+					{:else if clusterDetail}
+						<div class="work-status">
+							<h3>Active work</h3>
+							<p class="empty-note">
+								{clusterDetail.pullRequests.length} linked pull request{clusterDetail.pullRequests
+									.length === 1
+									? ''
+									: 's'} ·
+								{clusterDetail.issues.filter((issue) => issue.assignees.length > 0).length} assigned issue{clusterDetail.issues.filter(
+									(issue) => issue.assignees.length > 0
+								).length === 1
+									? ''
+									: 's'}
+							</p>
+							{#if clusterDetail.pullRequests.length}
+								<div class="pr-list">
+									{#each clusterDetail.pullRequests as pr (pr.number)}
+										<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+										<a class="pr-row" href={pr.url} target="_blank" rel="noreferrer">
+											<span class="pr-title">#{pr.number} {short(pr.title, 72)}</span>
+											<span
+												class:pr-ready={pr.status === 'Ready by visible checks'}
+												class:pr-waiting={pr.status.includes('waiting') ||
+													pr.status.includes('review')}
+												class="pr-status">{pr.status}</span
+											>
+											<span class="pr-meta"
+												>{pr.author ? `by @${pr.author}` : ''} · {pr.relation}</span
+											>
+										</a>
+									{/each}
+								</div>
+							{/if}
+							{#if clusterDetail.issues.some((issue) => issue.assignees.length)}
+								<div class="assignee-list">
+									{#each clusterDetail.issues.filter((issue) => issue.assignees.length) as issue (issue.number)}
+										<div class="assignee-row">
+											<!-- eslint-disable-next-line svelte/no-navigation-without-resolve -->
+											<a href={issue.url} target="_blank" rel="noreferrer">#{issue.number}</a>
+											<span
+												>{issue.assignees.map((assignee) => `@${assignee.login}`).join(', ')}</span
+											>
+										</div>
+									{/each}
+								</div>
+							{/if}
+						</div>
+					{/if}
 					<div class="child-list">
 						<div class="child-head">
 							<span>
@@ -1018,13 +1124,28 @@
 		line-height: 1.55;
 	}
 
-	.sync-note {
-		margin-top: 1.2rem;
-		padding-top: 0.85rem;
+	.last-sync {
+		display: inline-flex;
+		align-items: center;
+		gap: 0.35rem;
+		color: #7f8c9b;
+		font-size: 0.68rem;
+		white-space: nowrap;
+	}
+
+	.last-sync strong {
+		color: #a9b8c8;
+		font-weight: 600;
+	}
+
+	.work-status {
+		margin-top: 1rem;
+		padding-top: 0.9rem;
 		border-top: 1px solid #1b2430;
 	}
 
-	.sync-note h3 {
+	.work-status h3,
+	.work-status h4 {
 		margin: 0 0 0.5rem;
 		color: #7f8c9b;
 		font-size: 0.62rem;
@@ -1032,53 +1153,91 @@
 		text-transform: uppercase;
 	}
 
-	.sync-note p {
-		margin: 0.25rem 0;
-		color: #748394;
-		font-size: 0.68rem;
-		line-height: 1.45;
+	.work-status h4 {
+		margin-top: 0.9rem;
 	}
 
-	.sync-note strong {
+	.assignment {
+		margin: 0;
 		color: #a9b8c8;
-		font-weight: 600;
+		font-size: 0.72rem;
 	}
 
-	.sync-note code {
-		color: #a8cfff;
-		font-size: 0.64rem;
+	.assignment a {
+		color: #74a8dc;
+		text-decoration: none;
 	}
 
-	.sync-message {
+	.assignment a:hover {
+		text-decoration: underline;
+	}
+
+	.pr-list,
+	.assignee-list {
+		display: grid;
+		gap: 0.3rem;
+	}
+
+	.pr-row {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto;
+		gap: 0.05rem 0.5rem;
+		padding: 0.45rem 0.5rem;
+		border: 1px solid #202c39;
+		border-radius: 0.4rem;
+		background: #0b1016;
+		text-decoration: none;
+	}
+
+	.pr-row:hover {
+		border-color: #365572;
+		background: #111b25;
+	}
+
+	.pr-title {
+		color: #d2deea;
+		font-size: 0.7rem;
+		line-height: 1.35;
+		overflow-wrap: anywhere;
+	}
+
+	.pr-status {
+		grid-column: 2;
+		grid-row: span 2;
+		align-self: center;
+		color: #8b98a5;
+		font-size: 0.6rem;
+		white-space: nowrap;
+	}
+
+	.pr-ready {
 		color: #69db7c !important;
 	}
 
-	.sync-error {
-		color: #ff8787 !important;
+	.pr-waiting {
+		color: #fbbf24 !important;
 	}
 
-	.stat.warn strong {
-		color: #fbbf24;
+	.pr-meta {
+		color: #687a8d;
+		font-size: 0.6rem;
 	}
 
-	.queue-meta {
+	.assignee-row {
 		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 0.35rem;
-		margin-top: 0.8rem;
+		justify-content: space-between;
+		gap: 0.75rem;
 		color: #7f8c9b;
-		font-size: 0.65rem;
+		font-size: 0.68rem;
 	}
 
-	.queue-pill {
-		padding: 0.18rem 0.42rem;
-		border: 1px solid #4a3a20;
-		border-radius: 999px;
-		background: rgba(251, 191, 36, 0.08);
-		color: #fbbf24;
-		text-transform: uppercase;
-		letter-spacing: 0.05em;
+	.assignee-row a {
+		color: #74a8dc;
+		text-decoration: none;
+	}
+
+	.assignee-row a:hover {
+		text-decoration: underline;
 	}
 
 	.graph-panel {

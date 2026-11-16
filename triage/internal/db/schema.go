@@ -238,6 +238,17 @@ CREATE TABLE IF NOT EXISTS sync_runs (
   error       TEXT NOT NULL DEFAULT ''
 );
 
+CREATE TABLE IF NOT EXISTS pull_request_status (
+  pr_id             INTEGER PRIMARY KEY REFERENCES pull_requests(id) ON DELETE CASCADE,
+  draft             INTEGER NOT NULL DEFAULT 0,
+  review_decision   TEXT NOT NULL DEFAULT '',
+  mergeable         TEXT NOT NULL DEFAULT '',
+  mergeable_state   TEXT NOT NULL DEFAULT '',
+  checks_state      TEXT NOT NULL DEFAULT '',
+  head_sha          TEXT NOT NULL DEFAULT '',
+  updated_at        TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
+);
+
 CREATE TABLE IF NOT EXISTS sync_state (
   repo_id                   INTEGER PRIMARY KEY REFERENCES repos(id) ON DELETE CASCADE,
   phase                     TEXT NOT NULL DEFAULT 'done',
@@ -262,4 +273,4 @@ CREATE VIRTUAL TABLE IF NOT EXISTS issue_fts USING fts5(
 );
 `
 
-const schemaVersion = "2"
+const schemaVersion = "3"

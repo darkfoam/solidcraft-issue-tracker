@@ -1,0 +1,36 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: [self-hosted, linux, x64]
+    concurrency:
+      group: solidcraft-issue-tracker-deploy
+      cancel-in-progress: false
+    steps:
+      - name: Update checkout
+        run: |
+          set -eu
+          cd /home/nclack/solidcraft-issue-tracker
+          git fetch origin main
+          git reset --hard origin/main
+
+      - name: Build and restart
+        run: |
+          set -eu
+          cd /home/nclack/solidcraft-issue-tracker
+          docker compose build
+          docker compose up -d app mcp
+
+      - name: Back up and sync
+        run: |
+          set -eu
+          cd /home/nclack/solidcraft-issue-tracker
+          ./deploy/sync.sh

@@ -11,7 +11,10 @@ const binary =
 	process.env.TRIAGE_BIN ??
 	join(triageDir, 'bin', process.platform === 'win32' ? 'triage.exe' : 'triage');
 const noRetag = process.argv.includes('--no-retag');
-const syncArgs = process.argv.slice(2).filter((arg) => arg !== '--no-retag');
+const noPrStatus = process.argv.includes('--no-pr-status');
+const syncArgs = process.argv
+	.slice(2)
+	.filter((arg) => !['--no-retag', '--no-pr-status'].includes(arg));
 let activeRunId = 0;
 
 function run(command, args, options = {}) {
@@ -105,7 +108,7 @@ async function main() {
 	db.close();
 
 	const ghToken = await readToken();
-	const env = { ...process.env, TRIAGE_DB: dbPath, GITHUB_TOKEN: ghToken };
+	const env = { ...process.env, TRIAGE_DB: dbPath, TRIAGE_DB_PATH: dbPath, GITHUB_TOKEN: ghToken };
 	delete env.GH_TOKEN;
 
 	let failed = false;
@@ -125,6 +128,18 @@ async function main() {
 			onError: (chunk) => process.stderr.write(chunk)
 		});
 		if (retag.code !== 0) failed = true;
+	}
+
+	if (!failed && !noPrStatus) {
+		const prStatus = await run(process.execPath, [join(root, 'scripts', 'pr-status.mjs')], {
+			cwd: root,
+			env,
+			onOutput: (chunk) => process.stdout.write(chunk),
+			onError: (chunk) => process.stderr.write(chunk)
+		});
+		if (prStatus.code !== 0) {
+			process.stderr.write('sync: PR status refresh failed; issue sync remains valid\n');
+		}
 	}
 
 	const finishedAt = new Date().toISOString();
