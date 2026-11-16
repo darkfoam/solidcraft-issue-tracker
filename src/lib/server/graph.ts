@@ -1,6 +1,5 @@
 import { createHash } from 'node:crypto';
 import { statSync } from 'node:fs';
-import { homedir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import {
@@ -77,6 +76,23 @@ interface ClusterDraft {
 	signature: string;
 }
 
+interface ClusterRecord {
+	id: string;
+	dbId: number | null;
+	area: AreaInfo;
+	issues: IssueRow[];
+	signature: string;
+	label: string;
+	openCount: number;
+	repos: string[];
+	status: string;
+	priority: string;
+	layer: string;
+	assignee: string;
+	note: string;
+	pending: boolean;
+}
+
 type LayoutNode = GraphNode &
 	SimulationNodeDatum & {
 		seedX: number;
@@ -87,8 +103,8 @@ type LayoutEdge = SimulationLinkDatum<LayoutNode> & {
 	kind: GraphEdge['kind'];
 };
 
-const DB_PATH = resolve(
-	process.env.TRIAGE_DB_PATH ?? join(homedir(), 'solidcraft-triage', 'analysis', 'triage.sqlite')
+export const DB_PATH = resolve(
+	process.env.TRIAGE_DB_PATH ?? join(process.cwd(), 'data', 'triage.sqlite')
 );
 
 const CACHE_TTL_MS = Number(process.env.GRAPH_CACHE_TTL_MS ?? 60_000);
@@ -387,6 +403,182 @@ function loadRows(): {
 	}
 }
 
+interface PersistedClusterRow {
+	id: number;
+	name: string;
+	rationale: string;
+	root_tag_id: number | null;
+	score: number;
+	status: string | null;
+	priority: string | null;
+	layer: string | null;
+	assignee: string | null;
+	note: string | null;
+	issue_id: number | null;
+}
+
+function readPersistedClusters(
+	issueById: Map<number, IssueRow>,
+	areaByIssue: Map<number, AreaInfo>,
+	repoById: Map<number, RepoRow>
+): ClusterRecord[] {
+	const db = new DatabaseSync(DB_PATH, { readOnly: true });
+	try {
+		const rows = db
+			.prepare(
+				`select c.id, c.name, c.rationale, c.root_tag_id, c.score,
+				        q.status, q.priority, q.layer, q.assignee, q.note,
+				        ci.issue_id
+				 from clusters c
+				 left join cluster_queue q on q.cluster_id = c.id
+				 left join cluster_issues ci on ci.cluster_id = c.id
+				 order by c.id, ci.issue_id`
+			)
+			.all() as unknown as PersistedClusterRow[];
+
+		const byId = new Map<number, ClusterRecord>();
+		for (const row of rows) {
+			let cluster = byId.get(row.id);
+			if (!cluster) {
+				let rationale: {
+					area?: AreaInfo;
+					signature?: string;
+				} = {};
+				try {
+					rationale = JSON.parse(row.rationale || '{}');
+				} catch {
+					rationale = {};
+				}
+				const fallbackArea = rationale.area ??
+					(row.issue_id != null ? areaByIssue.get(row.issue_id) : undefined) ?? {
+						rootSlug: 'unclassified',
+						leafSlug: 'general',
+						rootLabel: 'Unclassified',
+						leafLabel: 'General'
+					};
+				cluster = {
+					id: `cluster:${row.id}`,
+					dbId: row.id,
+					area: fallbackArea,
+					issues: [],
+					signature: rationale.signature ?? '',
+					label: row.name || 'Untitled issue',
+					openCount: 0,
+					repos: [],
+					status: row.status ?? 'new',
+					priority: row.priority ?? 'none',
+					layer: row.layer ?? 'unknown',
+					assignee: row.assignee ?? '',
+					note: row.note ?? '',
+					pending: false
+				};
+				byId.set(row.id, cluster);
+			}
+			if (row.issue_id != null) {
+				const issue = issueById.get(row.issue_id);
+				if (issue) cluster.issues.push(issue);
+			}
+		}
+
+		for (const cluster of byId.values()) {
+			cluster.issues.sort((left, right) => left.number - right.number);
+			cluster.openCount = cluster.issues.filter((issue) => issue.state === 'open').length;
+			cluster.repos = [
+				...new Set(cluster.issues.map((issue) => repoById.get(issue.repo_id)?.slug ?? 'unknown'))
+			];
+		}
+		return [...byId.values()];
+	} finally {
+		db.close();
+	}
+}
+
+function seedClusters(clusters: ClusterRecord[], areaBySlug: Map<string, TagRow>): void {
+	const db = new DatabaseSync(DB_PATH);
+	try {
+		db.exec('PRAGMA busy_timeout=10000');
+		db.exec('BEGIN IMMEDIATE');
+		const insertCluster = db.prepare(
+			`insert into clusters(name, rationale, root_tag_id, score, created_at, updated_at)
+			 values(?, ?, ?, ?, datetime('now'), datetime('now'))`
+		);
+		const insertMember = db.prepare(
+			`insert or ignore into cluster_issues(cluster_id, issue_id, role) values(?, ?, 'member')`
+		);
+		const insertQueue = db.prepare(
+			`insert or ignore into cluster_queue(cluster_id, status, updated_at)
+			 values(?, 'new', datetime('now'))`
+		);
+		for (const cluster of clusters) {
+			const topicSlug =
+				cluster.area.leafSlug === 'general'
+					? cluster.area.rootSlug
+					: `${cluster.area.rootSlug}/${cluster.area.leafSlug}`;
+			const tagId = areaBySlug.get(topicSlug)?.id ?? null;
+			const rationale = JSON.stringify({
+				area: cluster.area,
+				signature: cluster.signature,
+				source: 'heuristic'
+			});
+			const result = insertCluster.run(cluster.label, rationale, tagId, cluster.issues.length);
+			const id = Number(result.lastInsertRowid);
+			for (const issue of cluster.issues) insertMember.run(id, issue.id);
+			insertQueue.run(id);
+		}
+		db.exec('COMMIT');
+	} catch (error) {
+		try {
+			db.exec('ROLLBACK');
+		} catch {
+			// ignore rollback errors
+		}
+		throw error;
+	} finally {
+		db.close();
+	}
+}
+
+function addUnclusteredClusters(
+	clusters: ClusterRecord[],
+	issues: IssueRow[],
+	areaByIssue: Map<number, AreaInfo>,
+	repoById: Map<number, RepoRow>
+): ClusterRecord[] {
+	const clustered = new Set<number>();
+	for (const cluster of clusters) {
+		for (const issue of cluster.issues) clustered.add(issue.id);
+	}
+	const groups = new Map<string, IssueRow[]>();
+	for (const issue of issues) {
+		if (clustered.has(issue.id)) continue;
+		const area = areaByIssue.get(issue.id)!;
+		const key = `${area.rootSlug}/${area.leafSlug}`;
+		const group = groups.get(key) ?? [];
+		group.push(issue);
+		groups.set(key, group);
+	}
+	for (const [key, group] of groups) {
+		const area = areaByIssue.get(group[0].id)!;
+		clusters.push({
+			id: `cluster:needs:${key}`,
+			dbId: null,
+			area,
+			issues: group.sort((left, right) => left.number - right.number),
+			signature: '',
+			label: `Needs grouping (${group.length})`,
+			openCount: group.filter((issue) => issue.state === 'open').length,
+			repos: [...new Set(group.map((issue) => repoById.get(issue.repo_id)?.slug ?? 'unknown'))],
+			status: 'new',
+			priority: 'none',
+			layer: 'unknown',
+			assignee: '',
+			note: '',
+			pending: true
+		});
+	}
+	return clusters;
+}
+
 function buildGraph(): GraphData {
 	const { repos, issues, tags, issueTags, labels, refs } = loadRows();
 
@@ -528,7 +720,7 @@ function buildGraph(): GraphData {
 		});
 	}
 
-	const clusters = [...draftByRoot.values()].map((draft) => {
+	const computedClusters: ClusterRecord[] = [...draftByRoot.values()].map((draft) => {
 		draft.issues.sort(
 			(left, right) =>
 				right.comments_count - left.comments_count ||
@@ -541,7 +733,7 @@ function buildGraph(): GraphData {
 				? draft.signature
 				: (draft.issues.map((issue) => signatureByIssue.get(issue.id)).find(Boolean) ?? '');
 		const id =
-			'cluster:' +
+			'cluster:computed:' +
 			createHash('sha1')
 				.update(
 					`${draft.area.rootSlug}/${draft.area.leafSlug}/` +
@@ -558,21 +750,41 @@ function buildGraph(): GraphData {
 		);
 		return {
 			id,
+			dbId: null,
 			area: draft.area,
-			representative,
 			issues: draft.issues,
 			signature,
 			label: clusterLabel(representative, signature),
 			openCount,
-			repos: [...reposInCluster]
+			repos: [...reposInCluster],
+			status: 'new',
+			priority: 'none',
+			layer: 'unknown',
+			assignee: '',
+			note: '',
+			pending: false
 		};
 	});
 
+	let clusters: ClusterRecord[] = [];
+	try {
+		clusters = readPersistedClusters(issueById, areaByIssue, repoById);
+		if (clusters.length === 0 && computedClusters.length > 0) {
+			seedClusters(computedClusters, areaBySlug);
+			clusters = readPersistedClusters(issueById, areaByIssue, repoById);
+		}
+	} catch (error) {
+		// A read-only or locked database should still render. The computed
+		// clusters are a valid fallback; persistent grouping needs a writable DB.
+		console.warn('cluster persistence unavailable:', error);
+	}
+	if (clusters.length === 0) clusters = computedClusters;
+	clusters = addUnclusteredClusters(clusters, issues, areaByIssue, repoById);
 	clusters.sort(
 		(left, right) =>
 			left.area.rootSlug.localeCompare(right.area.rootSlug) ||
 			left.area.leafSlug.localeCompare(right.area.leafSlug) ||
-			left.representative.number - right.representative.number
+			left.label.localeCompare(right.label)
 	);
 
 	const nodes: GraphNode[] = [];
@@ -588,6 +800,7 @@ function buildGraph(): GraphData {
 	const clusterNodes = new Map<string, GraphNode>();
 
 	for (const cluster of clusters) {
+		if (cluster.issues.length === 0) continue;
 		const rootSlug = cluster.area.rootSlug;
 		const leafSlug = cluster.area.leafSlug;
 		const color = colorFor(rootSlug);
@@ -655,7 +868,14 @@ function buildGraph(): GraphData {
 			size: 0,
 			x: 0,
 			y: 0,
-			signature: cluster.signature || undefined
+			signature: cluster.signature || undefined,
+			queueStatus: cluster.status,
+			priority: cluster.priority,
+			layer: cluster.layer,
+			assignee: cluster.assignee || undefined,
+			note: cluster.note || undefined,
+			pending: cluster.pending,
+			dbId: cluster.dbId ?? undefined
 		};
 		clusterNodes.set(cluster.id, clusterNode);
 		nodes.push(clusterNode);
@@ -776,16 +996,21 @@ function buildGraph(): GraphData {
 
 	layout(nodes, edges);
 
+	const graphClusters = clusters.filter((cluster) => cluster.issues.length > 0);
+	const unclusteredIssueCount = clusters
+		.filter((cluster) => cluster.pending)
+		.reduce((total, cluster) => total + cluster.issues.length, 0);
 	const meta: GraphMeta = {
 		generatedAt: new Date().toISOString(),
 		source: 'solidcraft-triage SQLite database',
 		method:
-			'Area taxonomy from tags; distinct issues use duplicate links plus normalized error signature or title; layout precomputed with d3-force',
+			'Area taxonomy from tags; persisted clusters with duplicate/error-signature grouping; layout precomputed with d3-force',
 		issueCount: issues.length,
 		openIssueCount: issues.filter((issue) => issue.state === 'open').length,
 		areaCount: rootNodes.size,
 		topicCount: topicNodes.size,
-		clusterCount: clusters.length,
+		clusterCount: graphClusters.filter((cluster) => !cluster.pending).length,
+		unclusteredIssueCount,
 		edgeCount: edges.length,
 		repositories: repos.map((repo) => ({ slug: repo.slug, name: repo.name }))
 	};
@@ -982,14 +1207,18 @@ function layout(nodes: GraphNode[], edges: GraphEdge[]): void {
 	}
 }
 
-export function getGraph(): GraphData {
+export function invalidateGraphCache(): void {
+	cache = null;
+}
+
+export function getGraph(force = false): GraphData {
 	const stat = statSync(DB_PATH);
 	const now = Date.now();
-	if (cache && now - cache.builtAt < CACHE_TTL_MS && cache.mtimeMs === stat.mtimeMs) {
+	if (!force && cache && now - cache.builtAt < CACHE_TTL_MS && cache.mtimeMs === stat.mtimeMs) {
 		return cache.data;
 	}
 	const data = buildGraph();
-	cache = { builtAt: now, mtimeMs: stat.mtimeMs, data };
+	cache = { builtAt: now, mtimeMs: statSync(DB_PATH).mtimeMs, data };
 	return data;
 }
 
@@ -1038,22 +1267,16 @@ export function filterGraph(
 		}
 	}
 
-	// An explicit area/topic selection means the whole subtree, but leaf issues
-	// still obey the repository/state filters.
+	// An explicit area/topic selection means the whole selected subtree, but leaf
+	// issues still obey the repository/state filters. Expand only issue leaves:
+	// expanding from the area node would incorrectly pull in every sibling topic.
 	if (area || topic) {
-		changed = true;
-		while (changed) {
-			changed = false;
-			for (const node of data.nodes) {
-				if (node.parent && keep.has(node.parent) && !keep.has(node.id)) {
-					if (node.kind === 'issue') {
-						if (repo && node.repo !== repo) continue;
-						if (state && node.state !== state) continue;
-					}
-					keep.add(node.id);
-					changed = true;
-				}
-			}
+		for (const node of data.nodes) {
+			if (node.kind !== 'issue' || !node.parent || keep.has(node.id)) continue;
+			if (!keep.has(node.parent)) continue;
+			if (repo && node.repo !== repo) continue;
+			if (state && node.state !== state) continue;
+			keep.add(node.id);
 		}
 	}
 

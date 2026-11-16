@@ -27,6 +27,13 @@ export interface GraphNode {
 	y: number;
 	signature?: string;
 	labels?: string[];
+	queueStatus?: string;
+	priority?: string;
+	layer?: string;
+	assignee?: string;
+	note?: string;
+	pending?: boolean;
+	dbId?: number;
 }
 
 export interface GraphEdge {
@@ -46,6 +53,7 @@ export interface GraphMeta {
 	areaCount: number;
 	topicCount: number;
 	clusterCount: number;
+	unclusteredIssueCount: number;
 	edgeCount: number;
 	repositories: Array<{ slug: string; name: string }>;
 }

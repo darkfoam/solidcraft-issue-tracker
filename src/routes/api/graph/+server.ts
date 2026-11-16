@@ -9,7 +9,7 @@ export const GET: RequestHandler = ({ url }) => {
 		stateParam === 'open' || stateParam === 'closed' ? stateParam : undefined;
 
 	try {
-		const graph = getGraph();
+		const graph = getGraph(url.searchParams.get('refresh') === '1');
 		return json(
 			filterGraph(graph, {
 				repo: url.searchParams.get('repo') ?? undefined,
