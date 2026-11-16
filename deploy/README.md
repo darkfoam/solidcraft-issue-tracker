@@ -68,6 +68,20 @@ docker compose --profile sync run --rm sync
 The sync job writes issues, comments, refs, tags, PR statuses and `sync_runs`.
 The app shows the last successful sync time.
 
+## Private organizer
+
+The public app has no grouping writes. Use the private organizer CLI from the host:
+
+```sh
+cd /home/nclack/solidcraft-issue-tracker
+docker compose run --rm --no-deps app node scripts/organize.mjs unclustered --area kernel --topic booleans
+docker compose run --rm --no-deps app node scripts/organize.mjs assign --cluster 404 --issues 123,456
+docker compose run --rm --no-deps app node scripts/organize.mjs create --area kernel --topic booleans --label "..." --issues 123
+docker compose run --rm --no-deps app node scripts/organize.mjs merge --from 883 --into 404
+```
+
+This is internal only. Do not expose it through Caddy or MCP.
+
 ## MCP
 
 Public read-only endpoint:

@@ -23,7 +23,8 @@
 		"sync:full": "node scripts/sync.mjs --full",
 		"mcp:issues": "node mcp/server.mjs",
 		"triage:test": "cd triage && go test ./...",
-		"mcp:http": "node mcp/http.mjs"
+		"mcp:http": "node mcp/http.mjs",
+		"organize": "node scripts/organize.mjs"
 	},
 	"engines": {
 		"node": ">=24"
