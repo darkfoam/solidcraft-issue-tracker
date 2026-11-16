@@ -85,6 +85,7 @@
 		if (areaFilter !== 'all' && node.area !== areaFilter) return true;
 		if (topicFilter !== 'all' && node.topic !== topicFilter && node.kind !== 'area') return true;
 		if (node.kind === 'cluster') {
+			if (node.pending) return false;
 			if (!showIssues && !showSingletons && node.issueCount === 1) return true;
 			return false;
 		}
@@ -175,6 +176,10 @@
 						result.visibility = 'hidden';
 						result.labelVisibility = 'hidden';
 						return result;
+					}
+					if (node.pending) {
+						result.color = '#fbbf24';
+						result.labelVisibility = 'visible';
 					}
 
 					const isSelected = key === selectedId;

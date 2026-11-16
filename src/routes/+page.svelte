@@ -10,6 +10,22 @@
 		fit: () => void;
 	}
 
+	interface SyncStatus {
+		running: boolean;
+		startedAt: string;
+		finishedAt: string;
+		lastError: string;
+		lastRun: {
+			id: number;
+			startedAt: string;
+			finishedAt: string;
+			status: string;
+			mode: string;
+			error: string;
+		} | null;
+		repositories: Array<{ slug: string; lastSync: string; error: string }>;
+	}
+
 	let graphData = $state<GraphData | null>(null);
 	let loading = $state(true);
 	let error = $state('');
@@ -23,6 +39,9 @@
 	let showSingletons = $state(false);
 	let showReferences = $state(false);
 	let graphView = $state<GraphViewHandle>();
+	let syncStatus = $state<SyncStatus | null>(null);
+	let syncBusy = $state(false);
+	let syncMessage = $state('');
 
 	const nodeById = $derived.by(() => {
 		const map = new SvelteMap<string, GraphNode>();
@@ -125,19 +144,70 @@
 			showReferences
 	);
 
-	onMount(async () => {
+	async function loadGraph(force = false): Promise<void> {
+		if (force) loading = true;
 		try {
-			const response = await fetch('/api/graph');
+			const response = await fetch(force ? '/api/graph?refresh=1' : '/api/graph');
 			if (!response.ok) {
 				const problem = (await response.json().catch(() => null)) as { error?: string } | null;
 				throw new Error(problem?.error ?? `Graph API returned ${response.status}`);
 			}
 			graphData = (await response.json()) as GraphData;
+			error = '';
 		} catch (problem) {
 			error = problem instanceof Error ? problem.message : 'Unable to load the graph';
 		} finally {
 			loading = false;
 		}
+	}
+
+	async function loadSyncStatus(): Promise<void> {
+		try {
+			const response = await fetch('/api/sync');
+			if (response.ok) syncStatus = (await response.json()) as SyncStatus;
+		} catch {
+			// Status is optional; the graph remains usable.
+		}
+	}
+
+	async function syncNow(): Promise<void> {
+		if (syncBusy || syncStatus?.running) return;
+		syncBusy = true;
+		syncMessage = 'Starting sync…';
+		try {
+			const response = await fetch('/api/sync', {
+				method: 'POST',
+				headers: { 'content-type': 'application/json' },
+				body: JSON.stringify({})
+			});
+			if (!response.ok) throw new Error(`Sync API returned ${response.status}`);
+			await loadSyncStatus();
+			// Poll until the child process finishes, then force one graph rebuild.
+			for (let attempt = 0; attempt < 120; attempt++) {
+				await new Promise((resolvePromise) => setTimeout(resolvePromise, 3000));
+				await loadSyncStatus();
+				if (!syncStatus?.running) break;
+			}
+			if (syncStatus?.lastRun?.status === 'failed' || syncStatus?.lastError) {
+				syncMessage = syncStatus.lastError || syncStatus.lastRun?.error || 'Sync failed';
+			} else {
+				await loadGraph(true);
+				syncMessage = 'Sync complete';
+			}
+		} catch (problem) {
+			syncMessage = problem instanceof Error ? problem.message : 'Sync failed';
+		} finally {
+			syncBusy = false;
+		}
+	}
+
+	onMount(() => {
+		void loadGraph();
+		void loadSyncStatus();
+		const timer = setInterval(() => {
+			if (!syncStatus?.running) void loadSyncStatus();
+		}, 30_000);
+		return () => clearInterval(timer);
 	});
 
 	function selectNode(node: GraphNode | null, focus = false): void {
@@ -221,9 +291,21 @@
 				<strong>{graphData?.meta.areaCount.toLocaleString() ?? '—'}</strong>
 				<span>topics</span>
 			</div>
+			<div class="stat warn">
+				<strong>{graphData?.meta.unclusteredIssueCount.toLocaleString() ?? '—'}</strong>
+				<span>to group</span>
+			</div>
 		</div>
 
 		<div class="top-actions">
+			<button
+				class="ghost-button"
+				onclick={syncNow}
+				disabled={syncBusy || syncStatus?.running}
+				title={syncStatus?.lastError || 'Fetch updated GitHub issues and retag'}
+			>
+				{syncBusy || syncStatus?.running ? 'Syncing…' : 'Sync now'}
+			</button>
 			<button class="ghost-button" onclick={() => graphView?.fit()}>Fit graph</button>
 			<a class="ghost-button" href={resolve('/api/graph')} target="_blank" rel="noreferrer"
 				>JSON API</a
@@ -324,6 +406,23 @@
 				<button class="text-button" onclick={resetFilters}>Reset filters</button>
 			{/if}
 
+			<div class="sync-note">
+				<h3>Database sync</h3>
+				{#if syncStatus?.lastRun}
+					<p>
+						Last run: <strong>{syncStatus.lastRun.status}</strong>
+						{#if syncStatus.lastRun.finishedAt}
+							· {syncStatus.lastRun.finishedAt.slice(0, 16).replace('T', ' ')}
+						{/if}
+					</p>
+				{:else}
+					<p>No sync recorded yet.</p>
+				{/if}
+				{#if syncMessage}<p class="sync-message">{syncMessage}</p>{/if}
+				{#if syncStatus?.lastError}<p class="sync-error">{syncStatus.lastError}</p>{/if}
+				<p class="sync-hint">Agents can also use <code>npm run sync</code> or the queue API.</p>
+			</div>
+
 			<div class="legend">
 				<h3>Legend</h3>
 				<div class="legend-row"><span class="legend-dot area"></span> Topic</div>
@@ -336,8 +435,9 @@
 			<div class="method-note">
 				<h3>How grouping works</h3>
 				<p>
-					Distinct issues are inferred from duplicate links plus normalized error signatures or
-					titles. A group is a starting point for triage, not a hand-curated decision.
+					Clusters are seeded from duplicate links and normalized failure signatures, then
+					persisted. New issues arrive as <strong>Needs grouping</strong>; an agent can move them
+					into an existing cluster or create a new one.
 				</p>
 			</div>
 		</aside>
@@ -394,6 +494,20 @@
 						{/if}
 					</div>
 				</div>
+
+				{#if selected.kind === 'cluster'}
+					<div class="queue-meta">
+						<span class="queue-pill"
+							>{selected.pending ? 'needs grouping' : selected.queueStatus}</span
+						>
+						{#if selected.assignee}
+							<span>assigned to {selected.assignee}</span>
+						{/if}
+						{#if selected.priority && selected.priority !== 'none'}<span>{selected.priority}</span
+							>{/if}
+						{#if selected.layer && selected.layer !== 'unknown'}<span>{selected.layer}</span>{/if}
+					</div>
+				{/if}
 
 				<div class="metric-grid">
 					{#if selected.kind !== 'issue'}
@@ -552,7 +666,8 @@
 	}
 
 	.app-shell {
-		min-height: 100vh;
+		height: 100vh;
+		overflow: hidden;
 		display: flex;
 		flex-direction: column;
 	}
@@ -670,6 +785,7 @@
 	.workspace {
 		flex: 1;
 		min-height: 0;
+		overflow: hidden;
 		display: grid;
 		grid-template-columns: 278px minmax(0, 1fr) 342px;
 	}
@@ -902,9 +1018,74 @@
 		line-height: 1.55;
 	}
 
+	.sync-note {
+		margin-top: 1.2rem;
+		padding-top: 0.85rem;
+		border-top: 1px solid #1b2430;
+	}
+
+	.sync-note h3 {
+		margin: 0 0 0.5rem;
+		color: #7f8c9b;
+		font-size: 0.62rem;
+		letter-spacing: 0.08em;
+		text-transform: uppercase;
+	}
+
+	.sync-note p {
+		margin: 0.25rem 0;
+		color: #748394;
+		font-size: 0.68rem;
+		line-height: 1.45;
+	}
+
+	.sync-note strong {
+		color: #a9b8c8;
+		font-weight: 600;
+	}
+
+	.sync-note code {
+		color: #a8cfff;
+		font-size: 0.64rem;
+	}
+
+	.sync-message {
+		color: #69db7c !important;
+	}
+
+	.sync-error {
+		color: #ff8787 !important;
+	}
+
+	.stat.warn strong {
+		color: #fbbf24;
+	}
+
+	.queue-meta {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 0.35rem;
+		margin-top: 0.8rem;
+		color: #7f8c9b;
+		font-size: 0.65rem;
+	}
+
+	.queue-pill {
+		padding: 0.18rem 0.42rem;
+		border: 1px solid #4a3a20;
+		border-radius: 999px;
+		background: rgba(251, 191, 36, 0.08);
+		color: #fbbf24;
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+	}
+
 	.graph-panel {
 		position: relative;
 		min-height: 0;
+		height: 100%;
+		overflow: hidden;
 		background: #0b0f14;
 	}
 
@@ -1251,6 +1432,12 @@
 	}
 
 	@media (max-width: 860px) {
+		.app-shell {
+			height: auto;
+			min-height: 100vh;
+			overflow: visible;
+		}
+
 		.topbar {
 			flex-wrap: wrap;
 			gap: 0.6rem;
