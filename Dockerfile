@@ -26,7 +26,9 @@ COPY --from=build /app/build ./build
 COPY --from=triage-build /out/triage ./triage/bin/triage
 COPY scripts ./scripts
 COPY mcp ./mcp
-RUN mkdir -p /data && chown node:node /data
+RUN chmod -R a+rX /app \
+ && mkdir -p /data \
+ && chown node:node /data
 USER node
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
