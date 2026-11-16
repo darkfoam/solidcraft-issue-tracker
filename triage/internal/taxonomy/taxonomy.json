@@ -1,0 +1,1846 @@
+{
+	"version": 1,
+	"areas": [
+		{
+			"slug": "kernel",
+			"name": "Kernel",
+			"parent": "",
+			"kind": "area",
+			"description": "The B-rep geometry kernel (vendored solidcore, smlib wrapper, kernel crate).",
+			"aliases": [
+				"kernel",
+				"geometry kernel",
+				"solidcore",
+				"smlib",
+				"brep",
+				"b-rep",
+				"kernel layer",
+				"geometry"
+			],
+			"labels": ["area:kernel"],
+			"prefixes": [],
+			"paths": [
+				"crates/kernel/**",
+				"crates/smlib/**",
+				"crates/solidcore-*/*",
+				"solidcore/crates/**",
+				"solidcore/docs/**"
+			],
+			"symbols": ["solidcore", "smlib"],
+			"patterns": ["\\b(kernel|solidcore|smlib|b-rep|brep|geometry kernel)\\b"]
+		},
+		{
+			"slug": "kernel/booleans",
+			"name": "Booleans (combine, union, intersect, cut)",
+			"parent": "kernel",
+			"kind": "area",
+			"description": "Boolean operations, combine, cut/join, union/intersect/subtract, coincidence and tangency in booleans.",
+			"aliases": [
+				"bool",
+				"booleans",
+				"boolean",
+				"bool ops",
+				"boolean operations",
+				"csg",
+				"union",
+				"intersect",
+				"intersection",
+				"subtract",
+				"difference",
+				"combine",
+				"cut",
+				"join",
+				"boolean cut"
+			],
+			"labels": [],
+			"prefixes": [
+				"COMBINE",
+				"BOOLEAN",
+				"BOOLEAN CUT",
+				"BOOLEAN UNION",
+				"BOOLEAN INTERSECT",
+				"BOOLEAN SUBTRACT",
+				"SOLID.COMBINE"
+			],
+			"paths": [
+				"crates/kernel/src/polybool*",
+				"crates/kernel/src/boolean*",
+				"crates/kernel/src/smlib_boolean*",
+				"crates/kernel/src/ops.rs",
+				"solidcore/**/boolean*"
+			],
+			"symbols": ["polybool", "smlib_boolean", "boolean_props"],
+			"patterns": [
+				"\\b(boolean|booleans|bool ops?|csg|union|intersect|intersection|subtract|difference|combine|boolean cut|boolean union|boolean intersect)\\b"
+			]
+		},
+		{
+			"slug": "kernel/blends",
+			"name": "Fillets, chamfers and corner blends",
+			"parent": "kernel",
+			"kind": "area",
+			"description": "Constant/variable-radius fillets, chamfers, rolling-ball blends, corners, setbacks and blend trims.",
+			"aliases": [
+				"blends",
+				"blend",
+				"fillets",
+				"fillet",
+				"chamfers",
+				"chamfer",
+				"rounds",
+				"round",
+				"rolling ball",
+				"corner patch",
+				"setback",
+				"edge blend"
+			],
+			"labels": [],
+			"prefixes": ["FILLET", "CHAMFER", "BLEND", "ROUND", "CORNER", "FILLETS", "CHAMFERS"],
+			"paths": [
+				"crates/kernel/src/blend*",
+				"crates/kernel/src/chamfer*",
+				"crates/kernel/src/fillet*",
+				"crates/kernel/src/corner*",
+				"solidcore/**/blend*",
+				"solidcore/docs/generic-blend.md"
+			],
+			"symbols": ["corner_g2"],
+			"patterns": [
+				"\\b(fillet|fillets|chamfer|chamfers|blend|blends|rolling[- ]ball|corner patch|setback|edge round)\\b"
+			]
+		},
+		{
+			"slug": "kernel/shell-offset",
+			"name": "Shells, offsets, thicken and draft",
+			"parent": "kernel",
+			"kind": "area",
+			"description": "Shell, offset face/surface, thicken, draft, hollowing and wall construction.",
+			"aliases": [
+				"shells",
+				"shell",
+				"shelling",
+				"offset face",
+				"offset surface",
+				"offset",
+				"thicken",
+				"draft",
+				"hollow",
+				"wall thickness"
+			],
+			"labels": [],
+			"prefixes": ["SHELL", "OFFSET", "OFFSET FACE", "THICKEN", "DRAFT"],
+			"paths": [
+				"crates/kernel/src/shell*",
+				"crates/kernel/src/offset*",
+				"crates/kernel/src/draft*",
+				"crates/kernel/src/lip*",
+				"solidcore/**/offset*",
+				"solidcore/**/shell*"
+			],
+			"symbols": ["offset_surface"],
+			"patterns": ["\\b(shell|shelled|shelling|offset face|offset surface|thicken|draft|hollow)\\b"]
+		},
+		{
+			"slug": "kernel/sweeps",
+			"name": "Extrude, revolve, loft, sweep and coil",
+			"parent": "kernel",
+			"kind": "area",
+			"description": "Swept solids: extrude, revolve, loft, sweep, coil/helix, press pull and their rails/profiles.",
+			"aliases": [
+				"sweeps",
+				"sweep",
+				"extrude",
+				"extrusion",
+				"revolve",
+				"revolution",
+				"loft",
+				"coil",
+				"helix",
+				"press pull",
+				"prism"
+			],
+			"labels": [],
+			"prefixes": [
+				"EXTRUDE",
+				"EXTRUDE CUT",
+				"REVOLVE",
+				"LOFT",
+				"SWEEP",
+				"COIL",
+				"HELIX",
+				"PRESS PULL",
+				"PRISM"
+			],
+			"paths": [
+				"crates/kernel/src/prism*",
+				"crates/kernel/src/sweep*",
+				"crates/kernel/src/loft*",
+				"crates/kernel/src/helix*",
+				"crates/kernel/src/smlib_sweeps*",
+				"crates/kernel/src/point_path*"
+			],
+			"symbols": ["smlib_sweeps"],
+			"patterns": [
+				"\\b(extrude|extrusion|extruded|revolve|revolved|revolution|loft|lofted|sweep|swept|coil|helix|helical|press pull)\\b"
+			]
+		},
+		{
+			"slug": "kernel/surfaces",
+			"name": "Surfaces and continuity",
+			"parent": "kernel",
+			"kind": "area",
+			"description": "Surface patch, trim/extend, boundary, match, fair, bridges and continuity analysis.",
+			"aliases": [
+				"surfaces",
+				"surface",
+				"patch",
+				"surface patch",
+				"boundary surface",
+				"surface loft",
+				"trim surface",
+				"extend surface",
+				"match surface",
+				"fair",
+				"continuity",
+				"g0",
+				"g1",
+				"g2",
+				"g3"
+			],
+			"labels": [],
+			"prefixes": [
+				"SURFACE",
+				"PATCH",
+				"BOUNDARY",
+				"TRIM",
+				"EXTEND",
+				"MATCH",
+				"FAIR",
+				"SURFACE LOFT",
+				"THICKEN SURFACE"
+			],
+			"paths": [
+				"crates/kernel/src/surface*",
+				"crates/kernel/src/fill*",
+				"crates/kernel/src/fair*",
+				"crates/kernel/src/bridge*",
+				"crates/kernel/src/matchsurf*",
+				"crates/kernel/src/boundary*",
+				"crates/kernel/src/continuity*",
+				"crates/kernel/src/iso*",
+				"crates/kernel/src/curvature*"
+			],
+			"symbols": ["surface_extend", "surface_trim", "surface_offset", "matchsurf"],
+			"patterns": [
+				"\\b(surface|surfaces|patch|boundary surface|surface loft|trim surface|extend surface|match surface|fair|continuity|curvature comb)\\b"
+			]
+		},
+		{
+			"slug": "kernel/topology",
+			"name": "Topology, validity and tolerances",
+			"parent": "kernel",
+			"kind": "area",
+			"description": "Topology, validity, healing, sewing, seams, slivers, orientation, tolerances and degenerate geometry.",
+			"aliases": [
+				"topology",
+				"validity",
+				"tolerance",
+				"tolerances",
+				"healing",
+				"heal",
+				"sewing",
+				"sew",
+				"seam",
+				"sliver",
+				"non-manifold",
+				"open shell",
+				"orientation",
+				"self-intersection",
+				"coincident",
+				"degenerate"
+			],
+			"labels": [],
+			"prefixes": ["TOPOLOGY", "VALIDITY", "TOLERANCE"],
+			"paths": [
+				"crates/kernel/src/topo*",
+				"crates/kernel/src/validity*",
+				"crates/kernel/src/validation*",
+				"crates/kernel/src/heal*",
+				"crates/kernel/src/sew*",
+				"crates/kernel/src/repair*",
+				"crates/kernel/src/seam*",
+				"crates/kernel/src/region*",
+				"crates/kernel/src/regularization*",
+				"crates/kernel/src/provenance*",
+				"solidcore/docs/validity-and-tolerances.md"
+			],
+			"symbols": ["regularization_protection"],
+			"patterns": [
+				"\\b(topology|validity|valid body|tolerance|tolerances|heal|healing|sew|sewing|seam|sliver|non[- ]manifold|open shell|inside[- ]out|orientation|self[- ]intersect\\w*|coincident|degenerate|near[- ]zero)\\b"
+			]
+		},
+		{
+			"slug": "kernel/tessellation",
+			"name": "Tessellation and display meshes",
+			"parent": "kernel",
+			"kind": "area",
+			"description": "Tessellation, triangulation, display meshes, facets and mesh quality.",
+			"aliases": [
+				"tessellation",
+				"meshing",
+				"display mesh",
+				"triangulation",
+				"facets",
+				"tessellate"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/kernel/src/mesh*",
+				"crates/kernel/src/display_mesh*",
+				"crates/kernel/src/tess*",
+				"solidcore-tess/**",
+				"crates/solidcore-tess/**"
+			],
+			"symbols": ["display_mesh", "solidcore-tess"],
+			"patterns": [
+				"\\b(tessellat\\w*|triangulat\\w*|display mesh|facet\\w*|meshing|mesh quality)\\b"
+			]
+		},
+		{
+			"slug": "kernel/threads-holes",
+			"name": "Threads, holes and bores",
+			"parent": "kernel",
+			"kind": "area",
+			"description": "Cosmetic and modelled threads, holes, bores, taps, counterbores and countersinks.",
+			"aliases": [
+				"threads",
+				"thread",
+				"holes",
+				"hole",
+				"bore",
+				"bores",
+				"tap",
+				"tapped",
+				"drill",
+				"counterbore",
+				"countersink",
+				"hole tool"
+			],
+			"labels": [],
+			"prefixes": ["THREAD", "HOLE", "BORE", "TAP", "DRILL", "COUNTERBORE", "COUNTERSINK"],
+			"paths": [
+				"crates/kernel/src/thread*",
+				"crates/kernel/src/hole*",
+				"crates/engine/src/cmd/hole*",
+				"crates/engine/src/cmd/thread*"
+			],
+			"symbols": ["cosmetic_thread"],
+			"patterns": [
+				"\\b(thread|threads|threaded|hole|holes|bore|bores|tap|tapped|drill|counterbore|countersink)\\b"
+			]
+		},
+		{
+			"slug": "kernel/patterns-split",
+			"name": "Patterns, mirror, split, trim and delete face",
+			"parent": "kernel",
+			"kind": "area",
+			"description": "Feature/body patterns, mirror, split body/face, trim and delete face.",
+			"aliases": [
+				"patterns",
+				"pattern",
+				"mirror",
+				"split",
+				"split body",
+				"split face",
+				"delete face",
+				"trim",
+				"trim body"
+			],
+			"labels": [],
+			"prefixes": [
+				"PATTERN",
+				"CIRCULAR PATTERN",
+				"RECTANGULAR PATTERN",
+				"MIRROR",
+				"SPLIT",
+				"SPLIT BODY",
+				"SPLIT FACE",
+				"DELETE FACE",
+				"TRIM"
+			],
+			"paths": [
+				"crates/kernel/src/split*",
+				"crates/kernel/src/delete_face*",
+				"crates/kernel/src/pattern*",
+				"crates/kernel/src/mirror*",
+				"crates/engine/src/cmd/pattern*",
+				"crates/engine/src/cmd/mirror*",
+				"crates/engine/src/cmd/split*"
+			],
+			"symbols": ["split_body", "delete_face"],
+			"patterns": [
+				"\\b(pattern|patterns|mirror|mirrored|split body|split face|delete face|trim)\\b"
+			]
+		},
+		{
+			"slug": "sketch",
+			"name": "Sketch",
+			"parent": "",
+			"kind": "area",
+			"description": "The sketch workspace, drawing tools, profiles and constraints.",
+			"aliases": ["sketch", "sketches", "sketching", "sketch mode", "create sketch"],
+			"labels": ["area:sketch"],
+			"prefixes": ["SKETCH", "CREATE SKETCH"],
+			"paths": ["crates/sketch/**", "crates/engine/src/cmd/sketch*", "crates/ui-egui/src/sketch*"],
+			"symbols": [],
+			"patterns": ["\\b(sketch|sketches|sketching|sketch mode|create sketch)\\b"]
+		},
+		{
+			"slug": "sketch/solver-constraints",
+			"name": "Sketch solver and constraints",
+			"parent": "sketch",
+			"kind": "area",
+			"description": "The constraint solver, constraints, DOF and over/under-constrained sketches.",
+			"aliases": [
+				"constraints",
+				"constraint",
+				"solver",
+				"dof",
+				"degrees of freedom",
+				"over-constrained",
+				"under-constrained"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/sketch/src/solver*",
+				"crates/sketch/src/constraint*",
+				"crates/sketch/src/solve*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(constraint|constraints|solver|solve|solving|dof|degrees of freedom|over[- ]constrained|under[- ]constrained)\\b"
+			]
+		},
+		{
+			"slug": "sketch/dimensions",
+			"name": "Sketch dimensions",
+			"parent": "sketch",
+			"kind": "area",
+			"description": "Dimensions, dimensioning, driven/arc-length dimensions and expressions in sketches.",
+			"aliases": [
+				"dimensions",
+				"dimension",
+				"dimensioning",
+				"driven dimension",
+				"arc length",
+				"diameter dimension"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["crates/sketch/src/dimension*", "crates/engine/src/cmd/sketch*"],
+			"symbols": [],
+			"patterns": [
+				"\\b(dimension|dimensions|dimensioning|driven dimension|arc length|diameter dimension)\\b"
+			]
+		},
+		{
+			"slug": "sketch/3d",
+			"name": "3D sketches and 3D wires",
+			"parent": "sketch",
+			"kind": "area",
+			"description": "3D sketch lines/arcs/points, 3D wires, project-to-surface, intersection and isoparametric curves.",
+			"aliases": [
+				"3d sketch",
+				"3-d sketch",
+				"3d wire",
+				"project to surface",
+				"intersection curve",
+				"isoparametric curve",
+				"spun profile"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/sketch/src/three_d*",
+				"crates/sketch/src/3d*",
+				"crates/engine/src/cmd/sketch*"
+			],
+			"symbols": ["3d_sketch", "project_to_surface"],
+			"patterns": [
+				"\\b(3d sketch|3-d sketch|3d wire|project to surface|intersection curve|isoparametric|spun profile)\\b"
+			]
+		},
+		{
+			"slug": "doc",
+			"name": "Document, parameters and timeline",
+			"parent": "",
+			"kind": "area",
+			"description": "The design document: parameters, expressions, timeline, naming, format and recovery.",
+			"aliases": ["document", "design document"],
+			"labels": ["area:doc"],
+			"prefixes": [],
+			"paths": [
+				"crates/doc/**",
+				"crates/engine/src/cmd/parameters*",
+				"crates/engine/src/cmd/config*",
+				"crates/engine/src/cmd/timeline*",
+				"crates/doc/src/format*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(document|design document|timeline|parameter|parameters|expression|expressions|configuration|configurations|persistent naming|design format)\\b"
+			]
+		},
+		{
+			"slug": "doc/parameters-configurations",
+			"name": "Parameters, expressions and configurations",
+			"parent": "doc",
+			"kind": "area",
+			"description": "User/model parameters, units, expressions, formulas, configurations and rules.",
+			"aliases": [
+				"parameters",
+				"expressions",
+				"formulas",
+				"configurations",
+				"configuration",
+				"config table",
+				"units"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["crates/doc/src/expr*", "crates/doc/src/param*", "crates/doc/src/config*"],
+			"symbols": [],
+			"patterns": [
+				"\\b(parameter|parameters|expression|expressions|formula|formulas|configuration|configurations|config table|units)\\b"
+			]
+		},
+		{
+			"slug": "doc/timeline",
+			"name": "Feature timeline and rebuild",
+			"parent": "doc",
+			"kind": "area",
+			"description": "Timeline order, feature edits, rebuild, rollback, suppression and regeneration.",
+			"aliases": [
+				"timeline",
+				"feature history",
+				"rebuild",
+				"rollback",
+				"suppress",
+				"feature order",
+				"regenerate"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/doc/src/eval*",
+				"crates/doc/src/document.rs",
+				"crates/doc/src/feature*",
+				"crates/engine/src/cmd/timeline*",
+				"crates/engine/src/cmd/edit*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(timeline|feature history|rebuild|rebuilding|rollback|suppress|feature order|regenerate)\\b"
+			]
+		},
+		{
+			"slug": "doc/naming-format",
+			"name": "Persistent naming and design format",
+			"parent": "doc",
+			"kind": "area",
+			"description": "Persistent face/edge names, references, design file format, save/open/reopen and migrations.",
+			"aliases": [
+				"persistent naming",
+				"naming",
+				"face names",
+				"edge names",
+				"references",
+				"design format",
+				"file format",
+				"migration",
+				"compatibility"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/doc/src/naming*",
+				"crates/doc/src/format*",
+				"crates/doc/src/newer_file*",
+				"crates/kernel/src/history*",
+				"crates/kernel/src/provenance*"
+			],
+			"symbols": ["persistent_naming", "newer_file", "provenance"],
+			"patterns": [
+				"\\b(persistent naming|face name|edge name|references?|design format|file format|format version|migration|compatibility|saved design|save|reopen|reopening)\\b"
+			]
+		},
+		{
+			"slug": "doc/recovery",
+			"name": "Undo, autosave and recovery",
+			"parent": "doc",
+			"kind": "area",
+			"description": "Undo/redo, autosave, crash recovery and checkpoints.",
+			"aliases": [
+				"autosave",
+				"auto-save",
+				"crash recovery",
+				"recovery",
+				"undo",
+				"redo",
+				"checkpoint",
+				"restore"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/doc/src/recovery*",
+				"crates/ui-egui/src/save_job*",
+				"crates/engine/src/crash*",
+				"crates/io/src/safe_write*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(autosave|auto[- ]save|crash recovery|recover|recovery|undo|redo|checkpoint|restore)\\b"
+			]
+		},
+		{
+			"slug": "assemblies",
+			"name": "Assemblies and components",
+			"parent": "",
+			"kind": "area",
+			"description": "Assemblies, components, occurrences, joints and motion.",
+			"aliases": ["assemblies", "assembly"],
+			"labels": ["area:assemblies"],
+			"prefixes": [],
+			"paths": [
+				"crates/dynamics/**",
+				"crates/doc/src/assembly*",
+				"crates/engine/src/cmd/component*",
+				"crates/engine/src/cmd/joint*",
+				"crates/engine/src/cmd/motion*",
+				"crates/engine/src/cmd/occurrence*",
+				"crates/ui-egui/src/assembly*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(assembly|assemblies|component|components|occurrence|occurrences|joint|joints|motion study)\\b"
+			]
+		},
+		{
+			"slug": "assemblies/components",
+			"name": "Components and occurrences",
+			"parent": "assemblies",
+			"kind": "area",
+			"description": "Components, occurrences, instances, nesting, paste-new and component properties.",
+			"aliases": [
+				"components",
+				"component",
+				"occurrences",
+				"occurrence",
+				"instances",
+				"nested parts",
+				"paste new"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/engine/src/cmd/component*",
+				"crates/engine/src/cmd/occurrence*",
+				"crates/ui-egui/src/assembly*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(component|components|occurrence|occurrences|instance|instances|paste new|nested part)\\b"
+			]
+		},
+		{
+			"slug": "assemblies/joints-motion",
+			"name": "Joints, motion and kinematics",
+			"parent": "assemblies",
+			"kind": "area",
+			"description": "Joints, mates, rigid groups, motion links, drives, motion studies and closed loops.",
+			"aliases": [
+				"joints",
+				"joint",
+				"mates",
+				"motion",
+				"kinematics",
+				"motion study",
+				"drive joint",
+				"actuator",
+				"linkage",
+				"four-bar",
+				"slider-crank"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/engine/src/cmd/joint*",
+				"crates/engine/src/cmd/motion*",
+				"crates/dynamics/**"
+			],
+			"symbols": ["motion_link"],
+			"patterns": [
+				"\\b(joint|joints|mate|mates|motion|kinematic|degrees of freedom|dof|drive joint|motion study|actuator|linkage|four[- ]bar|slider[- ]crank)\\b"
+			]
+		},
+		{
+			"slug": "assemblies/interference-contact",
+			"name": "Interference, clearance and contact",
+			"parent": "assemblies",
+			"kind": "area",
+			"description": "Interference checks, clearances, collisions and contact sets.",
+			"aliases": ["interference", "clearance", "collision", "contact set", "contact", "collisions"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/engine/src/cmd/interference*",
+				"crates/engine/src/cmd/clearance*",
+				"crates/engine/src/cmd/contact*",
+				"crates/dynamics/**"
+			],
+			"symbols": [],
+			"patterns": ["\\b(interference|clearance|collision|contact set|contacts?)\\b"]
+		},
+		{
+			"slug": "io",
+			"name": "Import, export and file formats",
+			"parent": "",
+			"kind": "area",
+			"description": "STEP/IGES, mesh formats, design files, DXF and URDF import/export.",
+			"aliases": ["import", "imports", "export", "exports", "file formats"],
+			"labels": ["area:io"],
+			"prefixes": [],
+			"paths": [
+				"crates/io/**",
+				"crates/kernel/src/step*",
+				"crates/kernel/src/iges*",
+				"solidcore-step/**",
+				"step-import/**",
+				"step-export/**"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(import|imports|export|exports|file format|step|iges|stl|3mf|obj|glb|dxf|urdf)\\b"
+			]
+		},
+		{
+			"slug": "io/step-iges",
+			"name": "STEP and IGES import/export",
+			"parent": "io",
+			"kind": "area",
+			"description": "STEP and IGES readers/writers, units, colors, assemblies and geometry round-trips.",
+			"aliases": [
+				"step",
+				"stp",
+				"iges",
+				"igs",
+				"step import",
+				"step export",
+				"iges import",
+				"iges export"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/kernel/src/step*",
+				"crates/kernel/src/iges*",
+				"crates/io/src/step*",
+				"crates/io/src/iges*",
+				"solidcore-step/**",
+				"step-import/**",
+				"step-export/**"
+			],
+			"symbols": ["step_in", "step_out", "iges_in", "iges_out"],
+			"patterns": ["\\b(step|stp|iges|igs)\\b"]
+		},
+		{
+			"slug": "io/mesh-formats",
+			"name": "3MF, STL, OBJ, GLB and mesh bodies",
+			"parent": "io",
+			"kind": "area",
+			"description": "Mesh import/export, mesh bodies, 3MF/STL/OBJ/GLB and point-cloud meshes.",
+			"aliases": [
+				"3mf",
+				"stl",
+				"obj",
+				"glb",
+				"gltf",
+				"mesh import",
+				"mesh export",
+				"mesh body",
+				"mesh bodies"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/io/src/*mesh*",
+				"crates/io/src/3mf*",
+				"crates/io/src/stl*",
+				"crates/io/src/obj*",
+				"crates/io/src/glb*",
+				"crates/kernel/src/meshbody*"
+			],
+			"symbols": ["3mf", "stl", "obj", "glb"],
+			"patterns": ["\\b(3mf|stl|obj|glb|gltf|mesh import|mesh export|mesh body|mesh bodies)\\b"]
+		},
+		{
+			"slug": "io/design-file",
+			"name": "Design files, save and open",
+			"parent": "io",
+			"kind": "area",
+			"description": ".sc/.solidcraft design files, design container, save/open/reopen, autosave files and backups.",
+			"aliases": [
+				"design file",
+				"design files",
+				".sc",
+				".solidcraft",
+				"save",
+				"open",
+				"reopen",
+				"design container",
+				"backup"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/doc/src/format*",
+				"crates/doc/src/newer_file*",
+				"crates/io/src/*",
+				"crates/io/src/safe_write*"
+			],
+			"symbols": ["design_container"],
+			"patterns": [
+				"\\b(design file|design files|\\.sc\\b|\\.solidcraft\\b|design container|save|saved|reopen|reopening|autosave)\\b"
+			]
+		},
+		{
+			"slug": "io/drawings-dxf",
+			"name": "DXF and drawing export",
+			"parent": "io",
+			"kind": "area",
+			"description": "DXF export, view DXF, SVG export and drawing exports.",
+			"aliases": ["dxf", "dxf export", "svg export", "drawing export", "view dxf"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/io/src/*dxf*",
+				"crates/doc/src/drawing/**",
+				"docs/view-dxf.md",
+				"docs/drawing-*"
+			],
+			"symbols": ["dxf", "svg_export"],
+			"patterns": ["\\b(dxf|svg export|drawing export|export current view)\\b"]
+		},
+		{
+			"slug": "io/urdf",
+			"name": "URDF export",
+			"parent": "io",
+			"kind": "area",
+			"description": "URDF export for robot simulators.",
+			"aliases": ["urdf"],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["crates/io/src/*urdf*", "docs/urdf.md"],
+			"symbols": [],
+			"patterns": ["\\burdf\\b"]
+		},
+		{
+			"slug": "render",
+			"name": "Render workspace and materials",
+			"parent": "",
+			"kind": "area",
+			"description": "The Render workspace, materials, lighting, textures and GPU path tracing.",
+			"aliases": ["render", "rendering"],
+			"labels": ["area:render"],
+			"prefixes": [],
+			"paths": ["crates/render/**", "crates/gpu/**", "crates/viewport-gpu/**"],
+			"symbols": [],
+			"patterns": [
+				"\\b(render|rendering|render workspace|material|materials|appearance|appearances|lighting|texture|pbr|hdri|raytrac\\w*|path tracer)\\b"
+			]
+		},
+		{
+			"slug": "render/workspace",
+			"name": "Render workspace, jobs and screenshots",
+			"parent": "render",
+			"kind": "area",
+			"description": "Render workspace UI, render jobs, screenshots, backgrounds and camera.",
+			"aliases": [
+				"render workspace",
+				"render job",
+				"render jobs",
+				"screenshot",
+				"render camera",
+				"background"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/render/src/*workspace*",
+				"crates/render/src/*job*",
+				"crates/render/src/*shot*",
+				"docs/render-workspace.md",
+				"docs/render-jobs.md"
+			],
+			"symbols": ["render_workspace", "render_job"],
+			"patterns": [
+				"\\b(render workspace|render job|render jobs|screenshot|render camera|background)\\b"
+			]
+		},
+		{
+			"slug": "render/materials-lighting",
+			"name": "Materials, appearance, lighting and environments",
+			"parent": "render",
+			"kind": "area",
+			"description": "Materials, appearances, PBR, lighting, HDRI and environments.",
+			"aliases": [
+				"materials",
+				"material",
+				"appearance",
+				"appearances",
+				"pbr",
+				"lighting",
+				"light",
+				"lights",
+				"hdri",
+				"environment",
+				"studio light"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/render/src/*material*",
+				"crates/render/src/*appearance*",
+				"crates/render/src/*light*",
+				"crates/render/src/*environment*",
+				"docs/render-material*",
+				"docs/render-light*",
+				"docs/render-environment*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(material|materials|appearance|appearances|pbr|lighting|lights?|hdri|environment|studio light|metallic|roughness|glass)\\b"
+			]
+		},
+		{
+			"slug": "render/textures",
+			"name": "Textures and image maps",
+			"parent": "render",
+			"kind": "area",
+			"description": "Textures, image maps, decals, UV and texture sampling.",
+			"aliases": ["textures", "texture", "image map", "decal", "uv", "normal map"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/render/src/*texture*",
+				"docs/render-texture*",
+				"docs/render-visual-mapping.md"
+			],
+			"symbols": [],
+			"patterns": ["\\b(texture|textures|image map|decal|uv map|normal map)\\b"]
+		},
+		{
+			"slug": "render/gpu",
+			"name": "GPU rendering and path tracing",
+			"parent": "render",
+			"kind": "area",
+			"description": "GPU backend, path tracer, shaders, wgpu, Metal/Vulkan and pipeline cache.",
+			"aliases": [
+				"gpu",
+				"path tracer",
+				"path tracing",
+				"shader",
+				"raytracing",
+				"wgpu",
+				"metal",
+				"vulkan"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/gpu/**",
+				"crates/viewport-gpu/**",
+				"crates/render/src/*gpu*",
+				"docs/render-raytrace*",
+				"docs/render-cpu-path.md"
+			],
+			"symbols": ["path_tracer"],
+			"patterns": [
+				"\\b(gpu|path tracer|path tracing|shader|raytrac\\w*|wgpu|metal|vulkan|pipeline cache)\\b"
+			]
+		},
+		{
+			"slug": "ui",
+			"name": "User interface",
+			"parent": "",
+			"kind": "area",
+			"description": "Dialogs, ribbon, viewport, browser, theme and preferences.",
+			"aliases": ["ui", "interface"],
+			"labels": ["area:ui"],
+			"prefixes": [],
+			"paths": [
+				"crates/ui-egui/**",
+				"crates/ui-kit/**",
+				"crates/look/**",
+				"crates/theme/**",
+				"crates/viewport-egui/**"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(ui|interface|dialog|dialogs|toolbar|ribbon|menu|panel|viewport|theme|icon|icons)\\b"
+			]
+		},
+		{
+			"slug": "ui/ribbon-dialogs",
+			"name": "Ribbon, toolbar, dialogs and panels",
+			"parent": "ui",
+			"kind": "area",
+			"description": "Ribbon/toolbar layout, menus, dialogs, panels, buttons and tooltips.",
+			"aliases": [
+				"ribbon",
+				"toolbar",
+				"menu",
+				"dialog",
+				"dialogs",
+				"panel",
+				"button",
+				"tooltip",
+				"feature dialog"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/ui-egui/src/dialogs*",
+				"crates/ui-egui/src/command_help*",
+				"crates/ui-kit/**",
+				"crates/look/icons/**"
+			],
+			"symbols": [],
+			"patterns": ["\\b(ribbon|toolbar|menu|dialog|dialogs|panel|button|tooltip|feature dialog)\\b"]
+		},
+		{
+			"slug": "ui/viewport-navigation",
+			"name": "Viewport, camera and navigation",
+			"parent": "ui",
+			"kind": "area",
+			"description": "Viewport rendering, camera, orbit/pan/zoom, selection, picking and section view.",
+			"aliases": [
+				"viewport",
+				"camera",
+				"navigation",
+				"orbit",
+				"pan",
+				"zoom",
+				"selection",
+				"pick",
+				"picking",
+				"section view"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/ui-egui/src/navigation*",
+				"crates/ui-egui/src/viewport*",
+				"crates/viewport/**",
+				"crates/viewport-egui/**"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(viewport|camera|navigation|navigate|orbit|pan|zoom|selection|pick|picking|highlight|section view|look at)\\b"
+			]
+		},
+		{
+			"slug": "ui/browser-timeline",
+			"name": "Browser and feature tree",
+			"parent": "ui",
+			"kind": "area",
+			"description": "Browser tree, feature history panel, rollback bar and selection in the tree.",
+			"aliases": ["browser", "feature tree", "history panel", "timeline browser", "rollback bar"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/ui-egui/src/browser*",
+				"crates/ui-egui/src/timeline*",
+				"crates/ui-egui/src/history*"
+			],
+			"symbols": ["feature_tree"],
+			"patterns": ["\\b(browser|feature tree|history panel|rollback bar)\\b"]
+		},
+		{
+			"slug": "ui/theme-prefs",
+			"name": "Theme, icons and preferences",
+			"parent": "ui",
+			"kind": "area",
+			"description": "Themes, colors, fonts, icons, style and preferences/settings.",
+			"aliases": [
+				"theme",
+				"themes",
+				"icon",
+				"icons",
+				"colour",
+				"color",
+				"font",
+				"style",
+				"preferences",
+				"settings",
+				"options"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/theme/**",
+				"crates/look/themes/**",
+				"crates/look/icons/**",
+				"crates/ui-egui/src/prefs*",
+				"crates/ui-egui/src/theme*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(theme|themes|icon|icons|colou?r|font|style|dark mode|light mode|preference|preferences|settings?|options?)\\b"
+			]
+		},
+		{
+			"slug": "ui/agent-chat",
+			"name": "Agent chat and assistant panel",
+			"parent": "ui",
+			"kind": "area",
+			"description": "Agent chat, assistant panel, Ollama/ACP integration and chat UI.",
+			"aliases": ["agent chat", "assistant", "chat", "ollama", "acp", "agent panel"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/ui-egui/src/assistant*",
+				"crates/ui-egui/src/agent_chat*",
+				"docs/agent-chat.md",
+				"crates/craft-plugin*"
+			],
+			"symbols": ["agent_chat"],
+			"patterns": ["\\b(agent chat|assistant|ollama|acp|chat panel|agent panel)\\b"]
+		},
+		{
+			"slug": "sheet-metal",
+			"name": "Sheet metal",
+			"parent": "",
+			"kind": "area",
+			"description": "Sheet metal flanges, bends, hems, unfold and flat patterns.",
+			"aliases": ["sheet metal", "sheet-metal"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/engine/src/cmd/sheet*",
+				"crates/doc/src/sheet*",
+				"crates/ui-egui/src/sheet*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(sheet metal|sheet-metal|flange|flanges|hem|unfold|refold|flat pattern|bend|bends|k-factor)\\b"
+			]
+		},
+		{
+			"slug": "sheet-metal/flanges",
+			"name": "Flanges, hems and bends",
+			"parent": "sheet-metal",
+			"kind": "area",
+			"description": "Edge/contour flanges, hem, bend and corner treatment.",
+			"aliases": ["flange", "flanges", "edge flange", "contour flange", "hem", "bend", "bends"],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["crates/engine/src/cmd/sheet*", "crates/doc/src/sheet*"],
+			"symbols": [],
+			"patterns": ["\\b(flange|flanges|edge flange|contour flange|hem|bend|bends)\\b"]
+		},
+		{
+			"slug": "sheet-metal/unfold-flat",
+			"name": "Unfold, flat pattern and bend table",
+			"parent": "sheet-metal",
+			"kind": "area",
+			"description": "Unfold/refold, flat pattern, bend allowance and bend table.",
+			"aliases": ["unfold", "refold", "flat pattern", "bend table", "bend allowance", "flat"],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["crates/doc/src/sheet*", "crates/engine/src/cmd/sheet*", "docs/formats/*"],
+			"symbols": ["flat_pattern", "bend_table"],
+			"patterns": ["\\b(unfold|refold|flat pattern|bend table|bend allowance)\\b"]
+		},
+		{
+			"slug": "plastic",
+			"name": "Plastic and enclosure tools",
+			"parent": "",
+			"kind": "area",
+			"description": "Plastic rules, enclosure features, bosses, ribs, snap fits, lips and standoffs.",
+			"aliases": [
+				"plastic",
+				"plastics",
+				"enclosure",
+				"boss",
+				"rib",
+				"snap fit",
+				"snap-fit",
+				"lip",
+				"groove",
+				"standoff",
+				"rest"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/engine/src/cmd/plastic*",
+				"crates/doc/src/plastic*",
+				"crates/ui-egui/src/plastic*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(plastic|enclosure|boss|rib|snap fit|snap-fit|snapfit|lip|groove|standoff|plastic rule)\\b"
+			]
+		},
+		{
+			"slug": "platform",
+			"name": "Platforms and packaging",
+			"parent": "",
+			"kind": "area",
+			"description": "Desktop platforms, web/wasm, installers and 3D mice.",
+			"aliases": ["platform", "platforms"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"apps/**",
+				"packaging/**",
+				"flake.nix",
+				".github/workflows/**",
+				"crates/threedx-client/**",
+				"crates/space-mouse/**"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(windows|macos|linux|flatpak|snap|nix|appimage|msi|dmg|installer|wasm|browser|web)\\b"
+			]
+		},
+		{
+			"slug": "platform/desktop",
+			"name": "Windows, macOS and Linux desktop",
+			"parent": "platform",
+			"kind": "area",
+			"description": "Native desktop app behavior on Windows, macOS and Linux.",
+			"aliases": ["windows", "macos", "linux", "desktop"],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["apps/solidcraft/**", "apps/solidcraft-cli/**"],
+			"symbols": [],
+			"patterns": ["\\b(windows|macos|linux|desktop)\\b"]
+		},
+		{
+			"slug": "platform/web-wasm",
+			"name": "Web and wasm build",
+			"parent": "platform",
+			"kind": "area",
+			"description": "Browser app, wasm build, WebGPU/WebGL and offline web.",
+			"aliases": ["web", "wasm", "webgpu", "webgl"],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["apps/solidcraft-web/**", "crates/viewport-gpu/shaders/**"],
+			"symbols": [],
+			"patterns": ["\\b(web|browser|wasm|webgpu|webgl)\\b"]
+		},
+		{
+			"slug": "platform/packaging",
+			"name": "Packaging and installers",
+			"parent": "platform",
+			"kind": "area",
+			"description": "AppImage, MSI, dmg, Flatpak, Snap, Nix, winget and release packaging.",
+			"aliases": [
+				"packaging",
+				"installer",
+				"flatpak",
+				"snap",
+				"nix",
+				"appimage",
+				"msi",
+				"dmg",
+				"winget",
+				"release package"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"packaging/**",
+				"flake.nix",
+				"docs/nix.md",
+				"docs/releasing.md",
+				"docs/downloads.md",
+				".github/workflows/release*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(flatpak|snap|nix|appimage|msi|dmg|winget|installer|packaging|release package)\\b"
+			]
+		},
+		{
+			"slug": "platform/3d-mouse",
+			"name": "3D mice and space mouse",
+			"parent": "platform",
+			"kind": "area",
+			"description": "3Dconnexion, SpaceMouse, SpacePilot and spacenavd support.",
+			"aliases": [
+				"3d mouse",
+				"3d mice",
+				"space mouse",
+				"spacemouse",
+				"3dconnexion",
+				"spacenavd",
+				"spacepilot",
+				"space navigator"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/threedx-client/**",
+				"crates/space-mouse/**",
+				"apps/solidcraft/src/space_mouse*"
+			],
+			"symbols": ["threedx", "space_mouse"],
+			"patterns": [
+				"\\b(3d mouse|3d mice|space mouse|spacemouse|3dconnexion|spacenavd|spacepilot|space navigator)\\b"
+			]
+		},
+		{
+			"slug": "engine",
+			"name": "Engine, commands and automation",
+			"parent": "",
+			"kind": "area",
+			"description": "The session, command registry, schemas, control channel, MCP and CLI.",
+			"aliases": ["engine", "schema"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/engine/**",
+				"crates/mcp/**",
+				"crates/control/**",
+				"crates/mcp-server/**",
+				"apps/solidcraft-cli/**"
+			],
+			"symbols": [],
+			"patterns": ["\\b(engine|command|commands|schema|control channel|mcp|cli|script)\\b"]
+		},
+		{
+			"slug": "engine/commands",
+			"name": "Commands and schemas",
+			"parent": "engine",
+			"kind": "area",
+			"description": "Command specs, ids, input/output schemas and command behavior.",
+			"aliases": ["commands", "command", "schemas", "command ids", "command schema"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/engine/src/cmd/**",
+				"crates/engine/src/schema/**",
+				"crates/ui-egui/src/command_help*"
+			],
+			"symbols": ["CommandSpec"],
+			"patterns": ["\\b(command|commands|command id|schema|schemas|toolbar command)\\b"]
+		},
+		{
+			"slug": "engine/control-mcp-cli",
+			"name": "Control channel, MCP and CLI",
+			"parent": "engine",
+			"kind": "area",
+			"description": "Control protocol, MCP tools/server, agent tools, headless CLI and scripts.",
+			"aliases": [
+				"mcp",
+				"control channel",
+				"agent tools",
+				"bridge",
+				"api",
+				"cli",
+				"headless",
+				"script"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/mcp/**",
+				"crates/mcp-server/**",
+				"crates/control/**",
+				"crates/control-egui/**",
+				"apps/solidcraft-cli/**",
+				"docs/mcp.md",
+				"docs/control-protocol.md"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(mcp|control channel|agent tools|bridge|control protocol|cli|command line|headless|script|eval|snapshot)\\b"
+			]
+		},
+		{
+			"slug": "engine/crash",
+			"name": "Crash reports and diagnostics",
+			"parent": "engine",
+			"kind": "area",
+			"description": "Crash reports, diagnostics, replay, native crash capture and recovery diagnostics.",
+			"aliases": ["crash reports", "crash report", "diagnostics", "replay"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/engine/src/crash*",
+				"crates/ui-egui/src/native_crash*",
+				"crates/engine/src/cmd/diagnostics*",
+				"docs/crash-reports.md"
+			],
+			"symbols": ["crash_report"],
+			"patterns": ["\\b(crash report|crash reports|diagnostics|crash recovery|replay)\\b"]
+		},
+		{
+			"slug": "infra",
+			"name": "Tests, CI, docs and infrastructure",
+			"parent": "",
+			"kind": "area",
+			"description": "Tests, CI, goldens, docs, localization, release and security.",
+			"aliases": ["infrastructure"],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["tests/**", "xtask/**", ".github/**", "scripts/**", "docs/**", "skills/**"],
+			"symbols": ["xtask", "goldens"],
+			"patterns": [
+				"\\b(tests?|ci|github actions|workflow|merge queue|docs?|documentation|release|security)\\b"
+			]
+		},
+		{
+			"slug": "infra/tests-ci",
+			"name": "Tests, CI and reference data",
+			"parent": "infra",
+			"kind": "area",
+			"description": "Unit/engine/UI tests, goldens, oracle, kernel ladder, action matrix, mutation testing and CI.",
+			"aliases": [
+				"tests",
+				"test",
+				"ci",
+				"merge queue",
+				"goldens",
+				"oracle",
+				"mutation testing",
+				"coverage"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"tests/**",
+				"xtask/**",
+				".github/workflows/**",
+				"scripts/ci/**",
+				"crates/goldens/**",
+				"crates/testkit/**"
+			],
+			"symbols": ["goldens", "action_matrix"],
+			"patterns": [
+				"\\b(test|tests|testing|ci|github actions|workflow|merge queue|flaky|goldens?|oracle|mutation testing|coverage)\\b"
+			]
+		},
+		{
+			"slug": "infra/docs",
+			"name": "Documentation and guides",
+			"parent": "infra",
+			"kind": "area",
+			"description": "README, contributor docs, user guide and architecture references.",
+			"aliases": ["docs", "documentation", "readme", "guide", "manual", "book"],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["docs/**", "skills/**", "README.md", "CONTRIBUTING.md", "AGENTS.md"],
+			"symbols": [],
+			"patterns": ["\\b(docs|documentation|readme|guide|manual|book)\\b"]
+		},
+		{
+			"slug": "infra/localization",
+			"name": "Localization and translations",
+			"parent": "infra",
+			"kind": "area",
+			"description": "Message catalogs, translations, languages and localization.",
+			"aliases": [
+				"localization",
+				"translation",
+				"translations",
+				"i18n",
+				"locale",
+				"language",
+				"languages"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"assets/locales/**",
+				"crates/ui-egui/src/i18n*",
+				"docs/localization.md",
+				"docs/book/src/dev/localization.md"
+			],
+			"symbols": ["i18n"],
+			"patterns": [
+				"\\b(localization|translation|translations|translate|i18n|locale|language|languages|localized)\\b"
+			]
+		},
+		{
+			"slug": "infra/release-security",
+			"name": "Release and security",
+			"parent": "infra",
+			"kind": "area",
+			"description": "Release process, versioning, changelog, updates, security and privacy.",
+			"aliases": [
+				"release",
+				"version",
+				"changelog",
+				"update",
+				"security",
+				"privacy",
+				"vulnerability",
+				"cve"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"scripts/release*",
+				"docs/releasing.md",
+				"SECURITY.md",
+				"deny.toml",
+				".github/workflows/release*"
+			],
+			"symbols": [],
+			"patterns": ["\\b(release|version|changelog|update|security|privacy|vulnerability|cve)\\b"]
+		},
+		{
+			"slug": "performance",
+			"name": "Performance and hangs",
+			"parent": "",
+			"kind": "area",
+			"description": "Slow operations, hangs, freezes, memory use and latency.",
+			"aliases": ["performance", "perf", "slow", "speed", "hang", "freeze", "memory"],
+			"labels": ["kernel-perf"],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": [
+				"\\b(slow|performance|perf|takes too long|hang|hangs|freeze|frozen|out of memory|oom|memory use|memory usage|latency|throughput)\\b"
+			]
+		},
+		{
+			"slug": "frames",
+			"name": "Frames and weldments",
+			"parent": "",
+			"kind": "area",
+			"description": "Structural members, frames, weldments, gussets and cut lists.",
+			"aliases": [
+				"frames",
+				"frame",
+				"weldments",
+				"weldment",
+				"structural member",
+				"gusset",
+				"cut list"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["crates/engine/src/cmd/frame*", "docs/frames.md", "crates/frame/**"],
+			"symbols": [],
+			"patterns": ["\\b(frame|frames|weldment|weldments|gusset|cut list|structural member)\\b"]
+		},
+		{
+			"slug": "drawings",
+			"name": "Drawings",
+			"parent": "",
+			"kind": "area",
+			"description": "Drawing sheets, views, annotations, dimensions and BOM.",
+			"aliases": [
+				"drawings",
+				"drawing",
+				"drawing sheet",
+				"annotation",
+				"bill of materials",
+				"bom",
+				"title block",
+				"detail view"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/doc/src/drawing/**",
+				"crates/engine/src/cmd/drawing*",
+				"docs/drawing-*",
+				"docs/book/src/guide/drawings*"
+			],
+			"symbols": [],
+			"patterns": [
+				"\\b(drawings?|drawing sheet|annotation|bill of materials|bom|title block|detail view)\\b"
+			]
+		},
+		{
+			"slug": "cam",
+			"name": "CAM, slicer and 3D printing",
+			"parent": "",
+			"kind": "area",
+			"description": "CAM, toolpaths, G-code, slicer handoff and 3D printing.",
+			"aliases": [
+				"cam",
+				"slicer",
+				"toolpath",
+				"toolpaths",
+				"g-code",
+				"gcode",
+				"3d printing",
+				"send to slicer"
+			],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["crates/cam/**", "crates/engine/src/cmd/cam*", "docs/cam*"],
+			"symbols": [],
+			"patterns": [
+				"\\b(cam|slicer|toolpath|toolpaths|g-code|gcode|3d print|3d printing|send to slicer)\\b"
+			]
+		},
+		{
+			"slug": "plugins",
+			"name": "Plugins",
+			"parent": "",
+			"kind": "area",
+			"description": "Craft plugins, WASM plugins and plugin runtime.",
+			"aliases": ["plugin", "plugins", "craft plugin", "wasm plugin"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"crates/craft-plugin/**",
+				"crates/craft-plugin-wasm/**",
+				"docs/plugins.md",
+				"docs/plugin-*"
+			],
+			"symbols": [],
+			"patterns": ["\\b(plugin|plugins|craft plugin|wasm plugin)\\b"]
+		},
+		{
+			"slug": "board",
+			"name": "PCB and board import",
+			"parent": "",
+			"kind": "area",
+			"description": "PCB, KiCad, board import, electronics, schematics and footprints.",
+			"aliases": ["pcb", "kicad", "board", "boards", "electronics", "schematic", "footprint"],
+			"labels": [],
+			"prefixes": [],
+			"paths": ["crates/engine/src/cmd/board*", "docs/kicad-import.md", "crates/board/**"],
+			"symbols": ["kicad"],
+			"patterns": ["\\b(pcb|kicad|electronics|schematic|footprint|board import)\\b"]
+		},
+		{
+			"slug": "point-clouds",
+			"name": "Point clouds",
+			"parent": "",
+			"kind": "area",
+			"description": "Point clouds, PLY/XYZ import and point-cloud modelling references.",
+			"aliases": ["point cloud", "point clouds", "ply", "xyz"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [
+				"docs/point-clouds.md",
+				"crates/io/src/*ply*",
+				"crates/io/src/*xyz*",
+				"crates/kernel/src/*point*"
+			],
+			"symbols": ["point_cloud"],
+			"patterns": ["\\b(point cloud|point clouds|ply|xyz)\\b"]
+		},
+		{
+			"slug": "type/bug",
+			"name": "Bug",
+			"parent": "",
+			"kind": "type",
+			"description": "",
+			"aliases": ["bug", "defect"],
+			"labels": ["bug"],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": [
+				"\\b(bug|defect|error|failed|failure|fails|wrong|incorrect|unexpected|refused|not working|does not work|doesn.t work)\\b"
+			]
+		},
+		{
+			"slug": "type/crash",
+			"name": "Crash",
+			"parent": "",
+			"kind": "type",
+			"description": "",
+			"aliases": ["crash", "panic"],
+			"labels": [],
+			"prefixes": ["CRASH"],
+			"paths": [],
+			"symbols": [],
+			"patterns": [
+				"\\b(crash|crashed|panic|panics|aborted|abort|segfault|segmentation fault|exception|stack overflow|ended without a clean exit|unclean exit)\\b"
+			]
+		},
+		{
+			"slug": "type/perf",
+			"name": "Performance issue",
+			"parent": "",
+			"kind": "type",
+			"description": "",
+			"aliases": ["performance issue", "perf issue"],
+			"labels": ["kernel-perf"],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": [
+				"\\b(slow|performance|perf|takes too long|hang|hangs|freeze|frozen|out of memory|oom|latency|throughput)\\b"
+			]
+		},
+		{
+			"slug": "type/feature",
+			"name": "Feature request",
+			"parent": "",
+			"kind": "type",
+			"description": "",
+			"aliases": ["feature", "feature request", "enhancement", "proposal", "rfc"],
+			"labels": ["enhancement"],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": [
+				"\\b(feature request|feature proposal|proposal|rfc|add support|option to|allow|request)\\b"
+			]
+		},
+		{
+			"slug": "type/docs",
+			"name": "Documentation issue",
+			"parent": "",
+			"kind": "type",
+			"description": "",
+			"aliases": ["docs issue"],
+			"labels": ["area:doc"],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": ["\\b(docs|documentation|readme|guide|manual|book)\\b"]
+		},
+		{
+			"slug": "type/build",
+			"name": "Build and CI",
+			"parent": "",
+			"kind": "type",
+			"description": "",
+			"aliases": ["build issue", "ci issue"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": [
+				"\\b(build|builds|compile|compiler|cargo|ci|workflow|github actions|merge queue|flaky|test suite)\\b"
+			]
+		},
+		{
+			"slug": "type/question",
+			"name": "Question",
+			"parent": "",
+			"kind": "type",
+			"description": "",
+			"aliases": ["question"],
+			"labels": ["question"],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": ["\\b(how do i|how to|why does|what is|question)\\b"]
+		},
+		{
+			"slug": "symptom/wrong-result",
+			"name": "Wrong result",
+			"parent": "",
+			"kind": "symptom",
+			"description": "",
+			"aliases": ["wrong result", "wrong shape", "wrong volume"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": [
+				"\\b(wrong|incorrect|unexpected result|unexpected shape|wrong shape|wrong volume|garbage|corrupt)\\b"
+			]
+		},
+		{
+			"slug": "symptom/refused",
+			"name": "Refused or unsupported",
+			"parent": "",
+			"kind": "symptom",
+			"description": "",
+			"aliases": ["refused", "unsupported", "not supported"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": [
+				"\\b(refused|refusal|not supported|unsupported|gives up|gave up|no result|cannot)\\b"
+			]
+		},
+		{
+			"slug": "symptom/hang",
+			"name": "Hang or freeze",
+			"parent": "",
+			"kind": "symptom",
+			"description": "",
+			"aliases": ["stuck"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": ["\\b(hang|hangs|freeze|frozen|takes too long|never finishes|stuck)\\b"]
+		},
+		{
+			"slug": "symptom/data-loss",
+			"name": "Data loss",
+			"parent": "",
+			"kind": "symptom",
+			"description": "",
+			"aliases": ["data loss", "lost work"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": [
+				"\\b(data loss|lost work|lost design|corrupt(ed)? file|save failed|crashed while saving)\\b"
+			]
+		},
+		{
+			"slug": "symptom/flaky",
+			"name": "Flaky or nondeterministic",
+			"parent": "",
+			"kind": "symptom",
+			"description": "",
+			"aliases": ["flaky", "intermittent"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": ["\\b(flaky|intermittent|randomly fails|non[- ]deterministic)\\b"]
+		},
+		{
+			"slug": "symptom/import-failure",
+			"name": "Import failure",
+			"parent": "",
+			"kind": "symptom",
+			"description": "",
+			"aliases": ["import failure"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": ["\\b(import failed|fails to import|not importing|import error|reader)\\b"]
+		},
+		{
+			"slug": "symptom/save-failure",
+			"name": "Save or open failure",
+			"parent": "",
+			"kind": "symptom",
+			"description": "",
+			"aliases": ["save failure"],
+			"labels": [],
+			"prefixes": [],
+			"paths": [],
+			"symbols": [],
+			"patterns": ["\\b(save failed|cannot save|failed to save|cannot open|failed to open)\\b"]
+		}
+	]
+}
