@@ -28,3 +28,5 @@ vite.config.ts.timestamp-*
 /data/*.sqlite-*
 /data/*.sqlite.*
 /triage/bin/
+
+/data/backups/
